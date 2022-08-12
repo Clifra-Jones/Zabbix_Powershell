@@ -1,5 +1,5 @@
-
-function Set-ZabbixAuthCode() {
+using namespace System.Management
+function Get-ZabbixAuthCode() {
     [CmdletBinding()]
     Param(
         [string]$Username,
@@ -7,17 +7,17 @@ function Set-ZabbixAuthCode() {
         [switch]$storeToProfile        
     )
 
-    [pscredential]$Creds
+    [Automation.pscredential] $zabbixCreds
     if (-not $Username) {
-        $Creds = Get-Credential
+        $zabbixCreds = Get-Credential
     } elseIf (-not $Password) {
-            $Creds = Get-Credential -UserName $Username
+            $zabbixCreds = Get-Credential -UserName $Username
     } else {
-            $Creds = [pscredential]::new($Username, $Password)
+            $zabbixCreds = [Automation.pscredential]::new($Username, $Password)
     } 
 
-    $Username = $Creds.UserName
-    $Passwd = ConvertFrom-SecureString -SecureString $creds.Password -AsPlainText
+    $Username = $zabbixCreds.UserName
+    $Passwd = ConvertFrom-SecureString -SecureString $zabbixcreds.Password -AsPlainText
 
     $payload = Get-Payload
 
@@ -31,14 +31,22 @@ function Set-ZabbixAuthCode() {
 
     try {
         $response = Invoke-RestMethod -Method GET -Uri $Uri -ContentType $contentType -Body $body
+        if ($response.error) {
+            Write-Host $response.error.data -ForegroundColor Red
+            exit
+        }
         $authcode = $response.result
-        $auth = @{
-            authcode = $authcode
+        if ($storeToProfile) {
+            $auth = @{
+                authcode = $authcode
+            }
+            if (-not (Test-Path -Path $configPath)) {
+                [void](New-Item -ItemType Directory -Path "$home/.zabbix")            
+            }
+            $Auth | ConvertTo-Json | Out-File $configFile
+        } else {
+            return $authcode
         }
-        if (-not (Test-Path -Path $configPath)) {
-            [void](New-Item -ItemType Directory -Path "$home/.zabbix")            
-        }
-        $Auth | ConvertTo-Json | Out-File $configFile
     } catch {
         Throw $_
     }
