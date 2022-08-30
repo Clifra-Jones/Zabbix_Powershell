@@ -15,7 +15,7 @@ function Get-Payload() {
     }
 }
 
-$contentType = "application/json"
+Set-Variable contentType -Option Constant -Value "application/json"
 
 # private functions
 
@@ -26,3 +26,8 @@ function Read-ZabbixConfig() {
 
 . $PSScriptRoot/public/Authorize.ps1
 . $PSScriptRoot/public/MediaType.ps1
+. $PSScriptRoot/public/Hosts.ps1
+. $PSScriptRoot/public/Items.ps1
+. $PSScriptRoot/public/History.ps1
+. $PSScriptRoot/public/Trends.ps1
+

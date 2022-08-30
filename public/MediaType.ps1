@@ -21,6 +21,9 @@ function Get-ZabbixMediaTypes() {
 
     try {
         $response = Invoke-RestMethod -Method GET -Uri $Uri -ContentType 'application/json' -Body $body
+        if ($response.error) {
+            throw $response.error.data
+        }
         return $response.result
     } catch {
         throw $_
@@ -122,7 +125,7 @@ function Set-ZabbixMediaType() {
     try {
         $response = Invoke-RestMethod -Method Post -Uri $Uri -ContentType 'application/json' -Body $body
         If ($response.error) {
-            return $response
+            throw $response.error.data
         } else {
             return $response.result
         }
