@@ -17,7 +17,11 @@ function Get-ZabbixHostGroups() {
         $payload = Get-Payload
         $payload.method = 'hostgroup.get'
         if ($groupId) {$payload.params.Add("groupids", $groupId)}
-        if ($includeHosts) {$payload.params.Add("includeHosts",@("hostid","name"))}
+        if ($includeHosts) {           
+                $payload.params.Add("selectHosts",@("hostid","name"))
+        } else {
+            $payload.params.Add("selectHosts", "count")
+        }
     }
 
     Process {
