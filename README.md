@@ -37,4 +37,4 @@ Then clone the repository.
 git clone https://github.com/Clifra-Jones/PSZabbix.git
 ```
 
-You can access the module function reference [here]().
+You can access the module function reference [here](https://clifra-jones.github.io/PSZabbix/docs/reference.html).
