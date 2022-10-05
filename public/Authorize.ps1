@@ -58,6 +58,7 @@ function Get-ZabbixAuthCode() {
     Login and receive an authorization token. 
     User must have a Zabbix logon. 
     If security settings for the user have changed, a new authorization token will be required.
+    If username and password are omitted they will be prompted for.
     .PARAMETER Username
     Username to log in with.
     .PARAMETER Password

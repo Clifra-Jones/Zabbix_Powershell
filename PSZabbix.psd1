@@ -30,7 +30,7 @@ CompanyName = 'Balfour Beatty US'
 Copyright = '(c) Cliff Williams. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'Powershell module to interact the the Zabbix API.'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -98,10 +98,10 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://www.gnu.org/licenses/gpl-3.0.en.html'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/Clifra-Jones/PSZabbix'
 
         # A URL to an icon representing this module.
         # IconUri = ''

@@ -1,9 +1,17 @@
 function Get-ZabbixHistory() {
     [CmdletBinding()]
     Param(
-        [Parameter(ValueFromPipelineByPropertyName = $true)]
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ParameterSetName = "host"
+        )]
         [string]$hostId,
-        [Parameter(ValueFromPipelineByPropertyName = $true)]
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ParameterSetName = 'item'
+        )]
         [string]$itemid,
         [datetime]$startTime,
         [datetime]$endTime,

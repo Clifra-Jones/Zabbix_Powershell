@@ -77,6 +77,7 @@ function Invoke-ZabbixAPI() {
     .OUTPUTS
     Return the result of the call. This is the complete response. It is up to you to display or use the data.
     .EXAMPLE
+    This example calls the hostgroup.get method and returns groups with a hosts property containing hostid and name.
     $params = @{
         selectHosts = @(
             "hostid",
@@ -84,8 +85,8 @@ function Invoke-ZabbixAPI() {
         )
     }
     $response  = Invoke-ZabbixAPI -Method "hostgroup.get" -params $params
-    This example calls the hostgroup.get method and returns groups with a hosts property containing hostid and name.
     .EXAMPLE
+    This example shows how to search hosts by host tags. Only output hostid and host name.
     $params = @{
         output = @(
             "hostid",
@@ -100,7 +101,6 @@ function Invoke-ZabbixAPI() {
             }
         )
     }
-    $response = Invoke-ZabbixAPI -Method "host.get" -params $params
-    This example shows how to search hosts by host tags. Only output hostid and host name.
+    $response = Invoke-ZabbixAPI -Method "host.get" -params $params    
     #>
 }

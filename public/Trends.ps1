@@ -45,4 +45,20 @@ function Get-ZabbixTrends() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Return items trend data.
+    .PARAMETER itemId
+    Return only trends with the given item IDs.
+    .PARAMETER StartDate
+    Return only values that have been collected after or at the given date/time.
+    .PARAMETER EndDate
+    Return only values that have been collected before or at the given date/time.
+    .PARAMETER limit
+    Limit the amount of retrieved objects.
+    .PARAMETER authcode
+    Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
+    .OUTPUTS
+    An array of trend objects.
+    #>
 }
