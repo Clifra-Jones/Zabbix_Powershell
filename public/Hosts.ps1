@@ -99,7 +99,7 @@ function Get-ZabbixHosts() {
         if ($response.error) {
             throw $response.error.data
         }
-        return $response.result
+        return $response.result        
     } catch {
         throw $_
     }
@@ -129,4 +129,179 @@ function Get-ZabbixHosts() {
     .PARAMETER authcode
     Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
     #>
+}
+
+function Get-HostInterfaces() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [string]$hostId,
+        [string]$InterfaceId,
+        [string]$authcode
+    )
+
+    Begin {
+        If (-not $authcode) {
+            $authcode = Read-ZabbixConfig
+        }
+        $payload = Get-Payload
+        $payload.Method = "hostinterface.get"
+        $payload.params.Add("output", "extend")
+        $payload.Add("auth", $authcode)
+    }
+
+    Process {
+        If ($hostid) {
+            $payload.params.Add("hostids", $hostId)
+        }
+        if ($InterfaceId) {
+            $payload.params.Add("interfaceIds",$InterfaceId)
+        }
+
+        $body = $payload | ConvertTo-Json -Compress -Depth 5
+
+        try {
+            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            if ($response.error) {
+                throw $response.error.data
+            }
+            return $response.result
+        } catch {
+            throw $_
+        }
+    }
+}
+
+function Add-HostInterface() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [string]$hostId,
+        [switch]$primaryInterface,
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Agent','SNMP','IPMI','JMX')]
+        [string]$interfaceType,
+        [switch]$useIP,
+        [string]$IPAddress,
+        [string]$dnsName,
+        [int]$port=10050,
+        [string]$authcode
+    )
+
+    Begin {
+        if (-not $authcode) {
+            $authcode = Read-ZabbixConfig
+        }
+        $payload = Get-Payload
+        $payload.Method = 'hostinterface.create'      
+        $payload.Add("auth", $authcode)  
+    }
+
+    Process {
+        $payload.params.Add("hostid",$hostId)
+        if ($interfaceType) {
+            $types = @('Agent','SNMP','IPMI','JMX')
+            $typeIndex = $types.IndexOf($interfaceType)
+            $payload.params.Add("type", $typeIndex)
+        }
+        if ($primaryInterface.IsPresent) {
+            $payload.params.Add("main", "1")            
+        } else {
+            $payload.params.Add("main", "0")
+        }
+        if ($useIP.IsPresent) {
+            $payload.params.Add("useip", "1")
+        } else {
+            $payload.params.Add("useip", "0")
+        }
+        if ($IPAddress) {
+            $payload.params.Add("ip", $IPAddress)
+        }
+        if ($dnsName) {
+            $payload.params.Add("dns", $dnsName)
+        }
+        $payload.params.Add("port", $port)
+
+        $body = $payload | ConvertTo-Json -Compress -Depth 5
+
+        try {
+            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            if ($response.error) {
+                throw $response.error.data
+            }
+            return $response.result
+        } catch {
+            throw $_
+        }
+    }
+}
+
+function Set-HostInterface() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [string]$InterfaceId,
+        [switch]$primaryInterface,
+        [ValidateSet('Agent','SNMP','IPMI','JMX')]
+        [string]$interfaceType,
+        [switch]$useIP,
+        [string]$IPAddress,
+        [string]$dnsName,
+        [int]$port=10050,
+        [string]$authcode
+    )
+
+    Begin {
+        if (-not $authcode) {
+            $authcode = Read-ZabbixConfig
+        }
+
+        $payload = Get-Payload
+        $payload.method = 'hostinterface.update'
+        $payload.Add("auth", $authcode)
+    }
+
+    Process{
+        $payload.params.Add("interfaceid", $InterfaceId)
+        if ($primaryInterface.IsPresent) {
+            $payload.params.Add("main", "1")
+        } else {
+            $payload.params.Add("main". "0")
+        }
+        if ($interfaceType) {
+            $types = @('Agent','SNMP','IPMI','JMX')
+            $typeIndex = $types.IndexOf($interfaceType)
+            $payload.params.Add("type", $typeIndex)
+        }
+        if ($useIP.IsPresent) {
+            $payload.params.Add("useip", "1")
+        } else {
+            $payload.params.Add("useip", "0")
+        }
+        if ($IPAddress) {
+            $payload.params.ADD("ip", $IPAddress)
+        }
+        if ($dnsName) {
+            $payload.params.Add("dns", $dnsName)
+        }
+        $payload.params.Add("port", $port)
+
+        try {
+            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            if ($response.error) {
+                throw $response.error.data
+            }
+            return $response.result
+        } catch {
+            throw $_
+        }
+    }
 }
