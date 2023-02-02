@@ -79,7 +79,7 @@ function Get-ZabbixHosts() {
     if ($hostid) {$payload.params.Add("hostids", $hostId)}
     if ($groupid) {$payload.params.Add("groupids", $groupId)}
     if ($itemid) {$payload.params.Add("itemids", $itemId)}
-    if ($templateid) {$payload.params.Add("templaiteids", $templateid)}
+    if ($templateid) {$payload.params.Add("templateids", $templateid)}
     if ($excludeDisabled) {
         $payload.params.Add("filter", @{
             status = 0

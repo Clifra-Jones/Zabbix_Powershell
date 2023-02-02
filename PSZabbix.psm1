@@ -30,6 +30,7 @@ function Read-ZabbixConfig() {
 . $PSScriptRoot/public/Items.ps1
 . $PSScriptRoot/public/History.ps1
 . $PSScriptRoot/public/Trends.ps1
+. $PSScriptRoot/public/Templates.ps1
 
 function Invoke-ZabbixAPI() {
     Param(

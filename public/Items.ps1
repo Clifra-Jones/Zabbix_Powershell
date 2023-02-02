@@ -171,14 +171,15 @@ function Set-ZabbixItem() {
             'ZabbixAgent','ZabbixTrapper','SimpleCheck','ZabbixInternal','WebItem','ExternalCheck','DatabaseMonitor','IPMIAgent','SSHAgent','TelnetAgent', `
             'Calculation','JMXAgent','SNMPTrap','DependentItem','HTTPAgent','SNMPAgent','Script'
         )]
-        [string]$type,
         [ValidateScript(
             {
-                if ($type -ne "HTTPAgent") {
+                if ($_ -ne "HTTPAgent") {
                     Throw "Parameter URL only valid for HTTPAgent Item type."
                 }
             }
-        )]
+        )]        
+        [string]$type,
+
         [string]$Url,
         [ValidateSet('NumericFloat','Character','Log','NumericUnsigned','Text')]
         [string]$valueType,
