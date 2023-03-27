@@ -1,5 +1,5 @@
 # Media Types
-function Get-ZabbixMediaTypes() {
+function Get-ZabbixMediaType() {
     Param(
         [string]$MediaTypeId,
         [ValidateSet('email','script','SMS','Webhook')]
@@ -9,45 +9,44 @@ function Get-ZabbixMediaTypes() {
         [switch]$includeMessageTemplates,
         [string]$authcode
     )
-    Begin {
-        if (-not $authcode) {
-            $authcode = Read-ZabbixConfig
-        }
-        
-        $payload = Get-Payload
 
-        $payload.method = "mediatype.get"
+    if (-not $authcode) {
+        $authcode = Read-ZabbixConfig
+    }
+    
+    $payload = Get-Payload
 
-        if ($includeMessageTemplates) {
-            $payload.params = @{
-                output = "extend"
-                selectMessageTemplates = "extend"
-            }
+    $payload.method = "mediatype.get"
+
+    if ($includeMessageTemplates) {
+        $payload.params = @{
+            output = "extend"
+            selectMessageTemplates = "extend"
         }
     }
-    Process {
-        if ($MediaTypeIds) {$payload.params.Add("mediatypeids", $MediaTypeId)}
-        if ($Media) {
-            $media = @('email','script','SMS','Webhook')
-            $mediaIndex = $media.IndexOf($Media)
-            $payload.params.Add("mediaids", $MediaIndex)
-        }
-        if ($UserId) {$payload.params.Add("userids", $UserId)}
 
-        $payload.Add("auth", $authcode)
-
-        $body = $payload | ConvertTo-Json -Compress
-
-        try {
-            $response = Invoke-RestMethod -Method GET -Uri $Uri -ContentType 'application/json' -Body $body
-            if ($response.error) {
-                throw $response.error.data
-            }
-            return $response.result
-        } catch {
-            throw $_
-        }
+    if ($MediaTypeId) {$payload.params.Add("mediatypeids", $MediaTypeId)}
+    if ($Media) {
+        $media = @('email','script','SMS','Webhook')
+        $mediaIndex = $media.IndexOf($Media)
+        $payload.params.Add("mediaids", $MediaIndex)
     }
+    if ($UserId) {$payload.params.Add("userids", $UserId)}
+
+    $payload.Add("auth", $authcode)
+
+    $body = $payload | ConvertTo-Json 
+
+    try {
+        $response = Invoke-RestMethod -Method GET -Uri $Uri -ContentType 'application/json' -Body $body
+        if ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+
     <#
     .SYNOPSIS
     Return media types.

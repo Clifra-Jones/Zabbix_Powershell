@@ -3,24 +3,35 @@ function Get-ZabbixHostGroups() {
     [CmdletBinding()]
     Param(
         [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [string[]]$hostId,
+        [string]$hostId,
         [string]$groupId,
         [switch]$includeHosts,
-        [string]$authCode
+        [string]$ProfileName
     )
 
     Begin {
-        if (-not $authcode) {
-            $authcode = Read-ZabbixConfig
+        # if (-not $authcode) {
+        #     $authcode = Read-ZabbixConfig
+        # }
+        # #$inputType = ""
+        # $payload = Get-Payload
+        # $payload.method = 'hostgroup.get'
+
+        $Parameters = @{
+            method = 'hostgroup.get'
         }
-        #$inputType = ""
-        $payload = Get-Payload
-        $payload.method = 'hostgroup.get'
-        if ($groupId) {$payload.params.Add("groupids", $groupId)}
+
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
+
+        $params = @{}
+
+        if ($groupId) {$params.Add("groupids", $groupId)}
         if ($includeHosts) {           
-                $payload.params.Add("selectHosts",@("hostid","name"))
+                $params.Add("selectHosts",@("hostid","name"))
         } else {
-            $payload.params.Add("selectHosts", "count")
+            $params.Add("selectHosts", "count")
         }
     }
 
@@ -29,12 +40,16 @@ function Get-ZabbixHostGroups() {
             $payload.params.Add("hostids", $hostId)
         }
 
-        $payload.Add("auth", $authcode)
+        #$payload.Add("auth", $authcode)
 
-        $body = $payload | ConvertTo-Json -Compress
+        #$body = $payload | ConvertTo-Json -Compress
+
+        $Parameters.Add("params", $params)
 
         Try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+
             if ($response.error) {
                 throw $response.error.data
             }
@@ -53,8 +68,8 @@ function Get-ZabbixHostGroups() {
     Returns the group with the group id.
     .PARAMETER includeHosts
     Return a hosts property that includes all host members of the group.
-    .PARAMETER authCode
-    Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
+    .PARAMETER ProfileName
+    Name of the saved profile to use.
     #>
 }
 
@@ -70,32 +85,63 @@ function Get-ZabbixHosts() {
         [switch]$includeInterfaces,
         [switch]$includeParentTemplates,
         [switch]$excludeDisabled,
-        [string]$authcode
+        [string]$ProfileName
     )
 
-    $authcode = Read-ZabbixConfig
-    $payload = Get-Payload
-    $payload.method = 'host.get'
-    if ($hostid) {$payload.params.Add("hostids", $hostId)}
-    if ($groupid) {$payload.params.Add("groupids", $groupId)}
-    if ($itemid) {$payload.params.Add("itemids", $itemId)}
-    if ($templateid) {$payload.params.Add("templaiteids", $templateid)}
+    # $authcode = Read-ZabbixConfig
+    # $payload = Get-Payload
+    # $payload.method = 'host.get'
+
+    $Parameters = @{
+        method = 'host.get'
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{}
+
+    if ($hostid) {
+        $params.Add("hostids", $hostId)
+    }
+    if ($groupid) {
+        $params.Add("groupids", $groupId)
+    }
+    if ($itemid) {
+        $params.Add("itemids", $itemId
+        )}
+    if ($templateid) {
+        $params.Add("templateids", $templateid)
+    }
     if ($excludeDisabled) {
-        $payload.params.Add("filter", @{
+        $params.Add("filter", @{
             status = 0
         })
     }
-    if ($includeItems) {$payload.params.Add("selectItems", @("itemid", "name", "key_"))}
-    if ($includeGroups) {$payload.params.Add("selectGroups",@("groupid", "name"))}
-    if ($includeInterfaces) {$payload.params.Add("selectInterfaces", "extend")}
-    if ($includeParentTemplates) {$payload.params.Add("selectParentTemplates", @("templateid", "name"))}
+    if ($includeItems) {
+        $.params.Add("selectItems", "extend")
+    }
+    if ($includeGroups) {
+        $params.Add("selectGroups","extend")
+    }
+    if ($includeInterfaces) {
+        $params.Add("selectInterfaces", "extend")
+    }
+    if ($includeParentTemplates) {
+        $params.Add("selectParentTemplates", "extend")
+    }
 
-    $payload.Add("auth", $authcode)
+    #$payload.Add("auth", $authcode)
 
-    $body = $payload | ConvertTo-Json -Compress
+    $Parameters.Add("params", $params)
+
+    #$body = $payload | ConvertTo-Json -Compress
 
     try {
-        $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        $response = Invoke-ZabbixAPI @Parameters
+
         if ($response.error) {
             throw $response.error.data
         }
@@ -126,8 +172,8 @@ function Get-ZabbixHosts() {
     Return a parentTemplates property with templates that the host is linked to.
     .PARAMETER excludeDisabled
     Exclude disabled hosts.
-    .PARAMETER authcode
-    Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
+    .PARAMETER ProfileName
+    The name of rhe saved profile to use.
     #>
 }
 
@@ -139,31 +185,46 @@ function Get-HostInterfaces() {
         )]
         [string]$hostId,
         [string]$InterfaceId,
-        [string]$authcode
+        [string]$ProfileName
     )
 
     Begin {
-        If (-not $authcode) {
-            $authcode = Read-ZabbixConfig
+        # If (-not $authcode) {
+        #     $authcode = Read-ZabbixConfig
+        # }
+        # $payload = Get-Payload
+        # $payload.Method = "hostinterface.get"
+
+        $Parameters = @{
+            method = 'hostinterface.get'
         }
-        $payload = Get-Payload
-        $payload.Method = "hostinterface.get"
-        $payload.params.Add("output", "extend")
-        $payload.Add("auth", $authcode)
+
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
+
+        #$params.Add("output", "extend")
+        #$payload.Add("auth", $authcode)
     }
 
     Process {
+        $params = @{}
+
         If ($hostid) {
-            $payload.params.Add("hostids", $hostId)
+            $params.Add("hostids", $hostId)
         }
         if ($InterfaceId) {
-            $payload.params.Add("interfaceIds",$InterfaceId)
+            $params.Add("interfaceIds",$InterfaceId)
         }
 
-        $body = $payload | ConvertTo-Json -Compress -Depth 5
+        $Params.Add("params", $params)
+
+        #$body = $payload | ConvertTo-Json -Compress -Depth 5
 
         try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+            
             if ($response.error) {
                 throw $response.error.data
             }
@@ -190,47 +251,66 @@ function Add-HostInterface() {
         [string]$IPAddress,
         [string]$dnsName,
         [int]$port=10050,
-        [string]$authcode
+        [string]$ProfileName
     )
 
     Begin {
-        if (-not $authcode) {
-            $authcode = Read-ZabbixConfig
+        # if (-not $authcode) {
+        #     $authcode = Read-ZabbixConfig
+        # }
+        # $payload = Get-Payload
+        # $payload.Method = 'hostinterface.create'      
+        # $payload.Add("auth", $authcode)  
+
+        $Parameters = @{
+            method = 'hostinterface.create'
         }
-        $payload = Get-Payload
-        $payload.Method = 'hostinterface.create'      
-        $payload.Add("auth", $authcode)  
+
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
     }
 
     Process {
-        $payload.params.Add("hostid",$hostId)
+        $params = @{}
+
+        $params.Add("hostid",$hostId)
         if ($interfaceType) {
-            $types = @('Agent','SNMP','IPMI','JMX')
-            $typeIndex = $types.IndexOf($interfaceType)
-            $payload.params.Add("type", $typeIndex)
+            $types = @{
+                Agent = 1
+                SNMP = 2
+                IPMI = 3
+                JMX = 4
+            }
+            #$typeIndex = $types.IndexOf($interfaceType)
+            $params.Add("type", $types[$interfaceType])
         }
         if ($primaryInterface.IsPresent) {
-            $payload.params.Add("main", "1")            
+            $params.Add("main", "1")            
         } else {
-            $payload.params.Add("main", "0")
+            $params.Add("main", "0")
         }
         if ($useIP.IsPresent) {
-            $payload.params.Add("useip", "1")
+            $params.Add("useip", "1")
         } else {
-            $payload.params.Add("useip", "0")
+            $params.Add("useip", "0")
         }
         if ($IPAddress) {
-            $payload.params.Add("ip", $IPAddress)
+            $params.Add("ip", $IPAddress)
         }
         if ($dnsName) {
-            $payload.params.Add("dns", $dnsName)
+            $params.Add("dns", $dnsName)
         }
-        $payload.params.Add("port", $port)
+        $params.Add("port", $port)
 
-        $body = $payload | ConvertTo-Json -Compress -Depth 5
+        $Parameters.Add("params", $params)
+
+        #$body = $payload | ConvertTo-Json -Compress -Depth 5
 
         try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+
             if ($response.error) {
                 throw $response.error.data
             }
@@ -256,46 +336,65 @@ function Set-HostInterface() {
         [string]$IPAddress,
         [string]$dnsName,
         [int]$port=10050,
-        [string]$authcode
+        [string]$ProfileName
     )
 
     Begin {
-        if (-not $authcode) {
-            $authcode = Read-ZabbixConfig
+        # if (-not $authcode) {
+        #     $authcode = Read-ZabbixConfig
+        # }
+
+        # $payload = Get-Payload
+        # $payload.method = 'hostinterface.update'
+        # $payload.Add("auth", $authcode)
+
+        $Parameters = @{
+            method = 'hostinterface.update'
         }
 
-        $payload = Get-Payload
-        $payload.method = 'hostinterface.update'
-        $payload.Add("auth", $authcode)
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
     }
 
     Process{
-        $payload.params.Add("interfaceid", $InterfaceId)
+        $params = @{}
+
+        $params.Add("interfaceid", $InterfaceId)
         if ($primaryInterface.IsPresent) {
-            $payload.params.Add("main", "1")
+            $params.Add("main", "1")
         } else {
-            $payload.params.Add("main". "0")
+            $params.Add("main". "0")
         }
         if ($interfaceType) {
-            $types = @('Agent','SNMP','IPMI','JMX')
-            $typeIndex = $types.IndexOf($interfaceType)
-            $payload.params.Add("type", $typeIndex)
+            $types = @{
+                Agent = 1
+                SNMP = 2
+                IPMI = 3
+                JMX = 4
+            }
+            #$typeIndex = $types.IndexOf($interfaceType)
+            $params.Add("type", $types[$interfaceType])
         }
         if ($useIP.IsPresent) {
-            $payload.params.Add("useip", "1")
+            $params.Add("useip", "1")
         } else {
-            $payload.params.Add("useip", "0")
+            $params.Add("useip", "0")
         }
         if ($IPAddress) {
-            $payload.params.ADD("ip", $IPAddress)
+            $params.ADD("ip", $IPAddress)
         }
         if ($dnsName) {
-            $payload.params.Add("dns", $dnsName)
+            $params.Add("dns", $dnsName)
         }
-        $payload.params.Add("port", $port)
+        $params.Add("port", $port)
+
+        $Parameters.Add("params", $params)
 
         try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+            
             if ($response.error) {
                 throw $response.error.data
             }

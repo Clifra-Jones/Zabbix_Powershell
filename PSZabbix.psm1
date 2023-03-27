@@ -2,7 +2,14 @@
 using namespace System.Management.Automation
 
 # Private Variables
-$Uri = "https://zabbix.balfourbeattyus.com/api_jsonrpc.php"
+#$Uri = "https://zabbix.balfourbeattyus.com/api_jsonrpc.php"
+$_CurrCreds = @{
+    Uri = $null
+    authcode = $null
+}
+
+New-Variable -Name CurrentCredentials -Value $_CurrCreds -Scope Script -Force
+
 $configPath = "$home/.zabbix"
 $configFile = "$configPath/auth.json"
 function Get-Payload() { 
@@ -20,8 +27,17 @@ Set-Variable contentType -Option Constant -Value "application/json"
 # private functions
 
 function Read-ZabbixConfig() {    
+    Param(
+        [string]$ProfileName
+    )
+
+    If (-not $ProfileName) {
+        $ProfileName = 'default'
+    }
+
     $config = Get-Content $configFile | ConvertFrom-Json
-    return $config.authcode
+    
+    return $config.$ProfileName
 }
 
 . $PSScriptRoot/public/Authorize.ps1
@@ -30,6 +46,11 @@ function Read-ZabbixConfig() {
 . $PSScriptRoot/public/Items.ps1
 . $PSScriptRoot/public/History.ps1
 . $PSScriptRoot/public/Trends.ps1
+. $PSScriptRoot/public/Templates.ps1
+. $PSScriptRoot/public/Discovery.ps1
+. $PSScriptRoot/public/Users.ps1
+
+
 
 function Invoke-ZabbixAPI() {
     Param(
@@ -37,12 +58,16 @@ function Invoke-ZabbixAPI() {
         [string]$Method,
         [Parameter(Mandatory = $true)]
         [psobject]$params,
-        [string]$authcode
+        [string]$ProfileName
     )
 
-    if (-not $authcode) {
-        $authcode = Read-ZabbixConfig
+    if ($ProfileName) {
+        $AuthProfile = Read-ZabbixConfig $ProfileName
+    } else {
+        $AuthProfile = $CurrentCredentials
     }
+
+    $Uri = $AuthProfile.Uri
 
     $payload = Get-Payload
 
@@ -50,17 +75,14 @@ function Invoke-ZabbixAPI() {
 
     $payload.params = $params
 
-    $payload.Add("auth", $authcode)
+    $payload.Add("auth", $AuthProfile.authcode)
 
     $body = $payload | ConvertTo-Json -Depth 10 -Compress
 
     try {
         $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
-        if ($response.error) {
-            throw $response.error.data
-        } else {
-            return $response
-        }
+        return $response
+
     } catch {
         throw $_
     }

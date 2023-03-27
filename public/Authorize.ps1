@@ -1,10 +1,30 @@
 using namespace System.Management
 function Get-ZabbixAuthCode() {
     [CmdletBinding()]
-    Param(
+    Param(        
+        [string]$Uri,
         [string]$Username,
         [securestring]$Password,
-        [switch]$storeToProfile        
+        [ValidateScript(
+            {
+                if ($_ -and $StoreToProfile) {
+                    $true
+                } else {
+                    throw "Parameter StoreToProfile is required with the parameter ProfileName."
+                }
+            }
+        )]
+        [string]$ProfileName,
+        [ValidateSet(
+            {
+                if ($_ -and $ProfileName) {
+                    $true
+                } else {
+                    throw "Parameter ProfileName is required with parameter StoreToProfile."
+                }
+            }
+        )]
+        [switch]$StoreToProfile
     )
 
     [Automation.pscredential] $zabbixCreds
@@ -27,26 +47,45 @@ function Get-ZabbixAuthCode() {
         password = $Passwd
     }
 
+
     $body = $payload | ConvertTo-Json -Compress
 
     try {
         $response = Invoke-RestMethod -Method GET -Uri $Uri -ContentType $contentType -Body $body
+        
         if ($response.error) {
             Write-Host $response.error.data -ForegroundColor Red
             exit
         }
         $authcode = $response.result
+
         if ($storeToProfile) {
-            $auth = @{
-                authcode = $authcode
+            if (-not $ProfileName) {
+                $ProfileName = 'default'
             }
             if (-not (Test-Path -Path $configPath)) {
-                [void](New-Item -ItemType Directory -Path "$home/.zabbix")            
+                [void](New-Item -ItemType Directory -Path "$home/.zabbix")
             }
-            $Auth | ConvertTo-Json | Out-File $configFile
-        } else {
-            return $authcode
+            if (-not (Test-Path -Path $configFile)) {
+                $Profiles = @{
+                    $ProfileName = @{
+                        Uri = $Uri
+                        authcode = $authcode
+                    }
+                }
+            } else {
+                $Profiles = Get-Content -Path $configFile | ConvertFrom-Json
+                if ($Profiles.$ProfileName) {
+                    $Profiles.$ProfileName.Uri = $Uri
+                    $Profiles.$ProfileName.authcode = $authcode
+                } else {
+                    $Profiles.Add($ProfileName, $Profile)
+                }
+            }
+            $Profiles | ConvertTo-Json | Out-File $configFile 
         }
+        $CurrentCredentials.Uri = $Uri
+        $CurrentCredentials.authcode = $authcode
     } catch {
         Throw $_
     }
@@ -68,4 +107,71 @@ function Get-ZabbixAuthCode() {
     .OUTPUTS
     The authorization token as a string.
     #>
+}
+
+Set-Alias -Name Connect-ZabbixUser -Value Get-ZabbixAuthCode -Option ReadOnly
+
+function Remove-ZabbixAuthCode() {
+    [CmdletBinding(SupportsShouldProcess)]
+    Param(
+        [string]$ProfileName
+    )
+
+    # if (-not $authcode) {
+    #     $authcode = Read-ZabbixConfig
+    #     $fromConfig = $true
+    # }
+
+    # $payload = Get-Payload
+
+    # $payload.method = 'user.logout'
+
+    # $payload.Add("auth", $authcode)
+
+    $Parameters = @{
+        method = 'user.logoff'
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $Parameters.Add("params", @())
+
+    #$body = $payload | ConvertTo-Json -Depth 5 -Compress
+
+    if ($fromConfig) {
+        $response = $(Write-host "Warning! You are about to deactivate the authroization code from your profile. Continue? [N/y]" -ForegroundColor Yellow -NoNewline); `
+        Read-Host
+        if ($response -eq "y") {
+            write-host "Operation canceled"
+            exit
+        }
+    }
+
+    if ($PSCmdlet.ShouldProcess("Deactivate","Authorization code ending in $(-join $authcode[-4..-1])")) {
+        try {
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+            
+            if ($response.error) {
+                throw $response.error.data
+            }
+        } catch {
+            $_
+        }
+    }
+}
+
+Set-Alias -Name Disconnect-ZabbixUser -Value Remove-ZabbixAuthCode -Option ReadOnly
+
+function Set-ZabbixProfile() {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProfileName
+    )
+
+    $config = Get-Content -Path $configFile | ConvertFrom-Json
+    $CurrentCredentials.Uri = $config.$Uri
+    $CurrentCredentials.authcode = $Config.authcode
 }

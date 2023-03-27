@@ -18,16 +18,26 @@ function Get-ZabbixHistory() {
         [ValidateSet('float','character','log','numeric','text')]
         [string]$historyType = 'numeric',
         [int]$limit,
-        [string]$authCode
+        [string]$ProfileName
     )
 
     Begin {
-        if (-not $authCode) {
-            $authCode = Read-ZabbixConfig
+        # if (-not $authCode) {
+        #     $authCode = Read-ZabbixConfig
+        # }
+
+        # $payload = Get-Payload
+        # $payload.method = "history.get"
+        $Parameters = @{
+            method = 'history.get'
         }
 
-        $payload = Get-Payload
-        $payload.method = "history.get"
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
+
+        $params = @{}
+
         switch ($historyType) {
             'float' {
                 $payload.params.Add("history", 0)
@@ -46,30 +56,33 @@ function Get-ZabbixHistory() {
             }
         }
 
-        $payload.params.Add("sortfield", "clock")
-        $payload.params.Add("sortorder", "DESC")
-        if ($limit) {$payload.params.Add("limit", $limit)}
+        $params.Add("sortfield", "clock")
+        $params.Add("sortorder", "DESC")
+        if ($limit) {$params.Add("limit", $limit)}
         
         if ($startTime) {
             $nixStartTime = ([System.DateTimeOffset]$startTime).ToUnixTimeSeconds()
-            $payload.params.Add("time_from", $nixStartTime)
+            $params.Add("time_from", $nixStartTime)
         }
         if ($endTime) {
             $nixEndTime = ([System.DateTimeOffset]$endTime).ToUnixTimeSeconds()
-            $payload.params.Add("time_till", $nixEndTime)
+            $params.Add("time_till", $nixEndTime)
         }
     }
 
     Process {
-        if ($hostId) {$payload.params.add("hostids", $hostId)}
-        if ($itemid) {$payload.params.Add("itemids", $itemid)}
+        if ($hostId) {$params.add("hostids", $hostId)}
+        if ($itemid) {$params.Add("itemids", $itemid)}
 
-        $payload.Add("auth", $authCode)
+        #$payload.Add("auth", $authCode)
 
-        $body = $payload | ConvertTo-Json -Compress
+        #$body = $payload | ConvertTo-Json -Compress
+        $Parameters.Add("params", $params)
 
         try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+
             if ($response.error) {
                 throw $response.error.data
             }

@@ -1,7 +1,6 @@
 function Get-ZabbixItems() {
     [CmdletBinding()]
     Param(
-        [Parameter(ValueFromPipelineByPropertyName = $true)]
         [string]$hostId,
         [string]$itemId,
         [string]$groupid,
@@ -13,103 +12,125 @@ function Get-ZabbixItems() {
         [switch]$searchWildcardsEnabled,
         [switch]$searchFromStart,
         [switch]$NoProgress,
-        [string]$authCode
+        [string]$ProfileName
     )
 
-    Begin {
-        if (-not $authCode) {
-            $authCode = Read-ZabbixConfig
-        }
 
-        
+    # if (-not $authCode) {
+    #     $authCode = Read-ZabbixConfig
+    # }
+
+    $Parameters = @{
+        method = 'item.get'
     }
 
-    Process {
-        if (-not $NoProgress.IsPresent) {
-            if ($hostId) { 
-                $percentComplete = 100
-                $status = "{0}: {1}" -f $hostId, $psItem.Name
-                Write-Progress -Activity "Getting Items for host:" -Status $Status -PercentComplete $percentComplete
-            }
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }                
+
+    # $payload = Get-Payload
+    # $payload.method = 'item.get'
+
+    $params = @{}
+
+    if ($itemId) {
+        $params.Add("itemids", $itemid)
+    }
+    if ($groupid) {
+        $params.Add("groupids", $groupid)
+    }
+    if ($templateId) {
+        $params.Add("templateids", $templateId)
+    }
+    if ($includeHosts) {
+        $params.Add("selectHosts", "extend")
+    }
+    if ($filter) {
+        $params.Add("filter", $filter)
+    }
+    if ($search) {
+        $params.Add("search", $search)
+    }
+    if ($searchByAny.IsPresent) {
+        $params.Add("searchByAny", $searchByAny.IsPresent)
+    }
+    if ($searchWildcardsEnabled.IsPresent) {
+        $params.Add("searchWildcardsEnabled", $searchWildcardsEnabled.IsPresent)
+    }
+    if ($searchFromStart) {
+        $params.Add("startSearch", $searchFromStart.IsPresent)
+    
+    }
+    if ($hostId) {$params.Add("hostids", $hostId)}
+
+
+    if ($params.count -eq 0) {
+        $params.Add("limit", 50)
+    }        
+    
+    #$payload.Add("auth", $authCode)
+
+    $Parameters.Add("params", $params)
+
+    #$body = $payload | ConvertTo-Json -Depth 10 -Compress
+
+    try {
+        #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.error.data
         }
-
-        $payload = Get-Payload
-        $payload.method = 'item.get'
-
-        if ($itemId) {$payload.params.Add("itemids", $itemid)}
-        if ($groupid) {$payload.params.Add("groupids", $groupid)}
-        if ($templateId) {$payload.params.Add("templateids", $templateId)}
-        if ($includeHosts) {$payload.params.Add("selectHosts", @("hostId","name"))}
-        if ($filter) {$payload.params.Add("filter", $filter)}
-        if ($search) {$payload.params.Add("search", $search)}
-        if ($searchByAny.IsPresent) {$payload.params.Add("searchByAny", $searchByAny.IsPresent)}
-        if ($searchWildcardsEnabled.IsPresent) {$payload.params.Add("searchWildcardsEnabled", $searchWildcardsEnabled.IsPresent)}
-        if ($searchFromStart) {$payload.params.Add("startSearch", $searchFromStart.IsPresent)}
-
-        if ($payload.params.count -eq 0) {
-            $payload.params.Add("limit", 50)
-        }        if ($hostId) {$payload.params.Add("hostids", $hostId)}
-
-        $payload.Add("auth", $authCode)
-
-        $body = $payload | ConvertTo-Json -Depth 10 -Compress
-
-        try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
-            if ($response.error) {
-                throw $response.error.data
-            }
-            $results = $response.result
-            foreach ($result in $results) {
-                    
-                [datetime]$_lastclock = ([System.DateTimeOffset]::FromUnixTimeSeconds($result.lastclock).DateTime).ToLocalTime()
-                $result | Add-Member -NotePropertyName "lastupdate" -NotePropertyValue $_lastclock
-                switch ($result.units) {
-                    'B' {
-                        # Bytes
-                        # display the value in KBs
-                        if ($result.lastvalue -lt 1Kb) {
-                            $_LastValue = "{0} Bytes" -f $result.lastvalue
-                        } elseif ($result.lastvalue -lt 1Mb) {
-                            $_LastValue = "{0} KB" -f ($result.lastvalue / 1Kb)
-                        } elseif ($result.lastvalue -lt 1GB) {
-                            $_LastValue = "{0} MB" -f ($result.lastvalue / 1MB)
-                        } else {
-                            $_LastValue = "{0} GB" -f ($result.lastvalue / 1GB)
-                        }                
-                    }
-                    'Bps' {
-                                # Bytes
-                        # display the value in KBs
-                        if ($result.lastvalue -lt 1Kb) {
-                            $_LastValue = "{0} Bps" -f $result.lastvalue
-                        } elseif ($result.lastvalue -lt 1Mb) {
-                            $_LastValue = "{0} KBps" -f ($result.lastvalue / 1Kb)
-                        } elseif ($result.lastvalue -lt 1GB) {
-                            $_LastValue = "{0} MBps" -f ($result.lastvalue / 1MB)
-                        } else {
-                            $_LastValue = "{0} GBps" -f ($result.lastvalue / 1GB)
-                        }     
-                    }
-                    'unixtime' {
-                        $_LastValue = [System.DateTimeOffset]::FromUnixTimeSeconds($result.lastvalue).DateTime.ToString("yyyy/MM/dd HH:mm:ss")
-                    }
-                    'uptime' {
-                        $_lastValue = [TimeSpan]::FromSeconds($result.lastvalue).ToString()
-                    }
-                    's' {
-                        $_LastValue = [timespan]::FromSeconds($result.lastvalue).ToString()
-                    }
-                    default {
-                        $_LastValue = $result.lastvalue
-                    }            
+        $results = $response.result
+        foreach ($result in $results) {
+                
+            [datetime]$_lastclock = ([System.DateTimeOffset]::FromUnixTimeSeconds($result.lastclock).DateTime).ToLocalTime()
+            $result | Add-Member -NotePropertyName "lastupdate" -NotePropertyValue $_lastclock
+            switch ($result.units) {
+                'B' {
+                    # Bytes
+                    # display the value in KBs
+                    if ($result.lastvalue -lt 1Kb) {
+                        $_LastValue = "{0} Bytes" -f $result.lastvalue
+                    } elseif ($result.lastvalue -lt 1Mb) {
+                        $_LastValue = "{0} KB" -f ($result.lastvalue / 1Kb)
+                    } elseif ($result.lastvalue -lt 1GB) {
+                        $_LastValue = "{0} MB" -f ($result.lastvalue / 1MB)
+                    } else {
+                        $_LastValue = "{0} GB" -f ($result.lastvalue / 1GB)
+                    }                
                 }
-                $result | Add-Member -MemberType NoteProperty -Name "lastData" -Value $_LastValue
+                'Bps' {
+                            # Bytes
+                    # display the value in KBs
+                    if ($result.lastvalue -lt 1Kb) {
+                        $_LastValue = "{0} Bps" -f $result.lastvalue
+                    } elseif ($result.lastvalue -lt 1Mb) {
+                        $_LastValue = "{0} KBps" -f ($result.lastvalue / 1Kb)
+                    } elseif ($result.lastvalue -lt 1GB) {
+                        $_LastValue = "{0} MBps" -f ($result.lastvalue / 1MB)
+                    } else {
+                        $_LastValue = "{0} GBps" -f ($result.lastvalue / 1GB)
+                    }     
+                }
+                'unixtime' {
+                    $_LastValue = [System.DateTimeOffset]::FromUnixTimeSeconds($result.lastvalue).DateTime.ToString("yyyy/MM/dd HH:mm:ss")
+                }
+                'uptime' {
+                    $_lastValue = [TimeSpan]::FromSeconds($result.lastvalue).ToString()
+                }
+                's' {
+                    $_LastValue = [timespan]::FromSeconds($result.lastvalue).ToString()
+                }
+                default {
+                    $_LastValue = $result.lastvalue
+                }            
             }
-            return $results
-        } catch {
-            throw $_
+            $result | Add-Member -MemberType NoteProperty -Name "lastData" -Value $_LastValue
         }
+        return $results
+    } catch {
+        throw $_
     }
     <#
     .SYNOPSIS
@@ -140,45 +161,50 @@ function Get-ZabbixItems() {
     The search parameter will compare the beginning of fields.
     .PARAMETER NoProgress
     Do not show progress. If passing in an array of objects progress is show. Supply thi sto supress the progress indicator.
-    .PARAMETER authCode
-    Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
+    .PARAMETER ProfileName
+    Name of the samed profile to use.
     #>
 }
 
 function Set-ZabbixItem() {
-    [CmdletBinding(DefaultParameterSetName = 'props')]
+    [CmdletBinding()]
     Param(
-        [Parameter(
-            Mandatory = $true,
-            ParameterSetName = 'props'
-        )]
-        [string]$itemid,
-        [Parameter(
-            Mandatory = $true,
-            ValueFromPipeline = $true,
-            ParameterSetName = 'item'
-        )]
-        [psobject]$item,
-        [Parameter(ParameterSetName = 'props')]
-        [string]$name,
-        [string]$delay,
-        [Parameter(ParameterSetName = 'props')]        
-        [switch]$Disabled,
-        [Parameter(ParameterSetName = 'props')]
-        [string]$key,
-        [Parameter(ParameterSetName = 'props')]
-        [ValidateSet(
-            'ZabbixAgent','ZabbixTrapper','SimpleCheck','ZabbixInternal','WebItem','ExternalCheck','DatabaseMonitor','IPMIAgent','SSHAgent','TelnetAgent', `
-            'Calculation','JMXAgent','SNMPTrap','DependentItem','HTTPAgent','SNMPAgent','Script'
-        )]
-        [string]$type,
         [ValidateScript(
             {
-                if ($type -ne "HTTPAgent") {
-                    Throw "Parameter URL only valid for HTTPAgent Item type."
+                if ($_ -and (
+                    $null -eq $ItemId -and $null -eq $Name -and $null -eq $Delay -and $null -eq $Disabled -and $null -eq $Key -and
+                    $null -eq $type -and $null -eq $Url -and $null -eq $ValueType -and $null -eq $allowTraps -and $null -eq $AuthType -and 
+                    $null -eq $Description -and $null -eq $followRedirects -and $null -eq $HttpHeaders -and $null -eq $History -and 
+                    $null -eq $HttpProxyString -and $null -eq $inventoryLink -and $null -eq $ipmiSensor -and $null -eq $JMXEndpoint -and 
+                    $null -eq $MasterItemId -and $null -eq $additionalParams -and $null -eq $PostType -and $bull -eq $Posts -and 
+                    $null -eq $PrivateKey -and $null -eq $PublicKey -and $null -eq $queryFields -and $null -eq $requestMethod -and
+                    $null -eq $retrieveMode -and $null -eq $sslCertFile -and $null -eq $snmpOID -and $null -eq $sslKeyFile -and 
+                    $null -eq $Timeout -and $null -eq $trapperHost -and $null -eq $Trends -and $null -eq $Units -and $null -eq $valueMapId -and 
+                    $null -eq $verifyHost -and $null -eq $verifyPeer
+                ) ) {
+                    $True
+                } else {
+                    throw "Property Item cannot be used with other Item properties."
                 }
             }
         )]
+        [string]$Item,
+        [psobject]$ItemId,
+        [string]$name,
+        [string]$delay,
+        [switch]$Disabled,
+        [string]$key,
+        [ValidateSet('ZabbixAgent','ZabbixTrapper','SimpleCheck','ZabbixInternal','ZabbixAgentActive','ZabbixAggregate',
+                      'Webitem', 'ExternalCheck','DatabaseMonitor', 'IPMIAgent','SSHAgent','TelnetAgent','Calculated',
+                      'JMXAgent','SNMPTrap','DependentItem','HTTPAgent','SNMPAgent')]
+        [ValidateScript(
+            {
+                if ($_ -ne "HTTPAgent") {
+                    Throw "Parameter URL only valid for HTTPAgent Item type."
+                }
+            }
+        )]        
+        [string]$type,
         [string]$Url,
         [ValidateSet('NumericFloat','Character','Log','NumericUnsigned','Text')]
         [string]$valueType,
@@ -381,49 +407,72 @@ function Set-ZabbixItem() {
         )]
         [switch]$verifyPeer,
         [switch]$NoProgress,
-        [string]$authcode
+        [string]$ProfileName
     )
 
 
-    if (-not $autocode) {
-        $authcode = Read-ZabbixConfig
+    # if (-not $autocode) {
+    #     $authcode = Read-ZabbixConfig
+    # }
+
+    # $payload = Get-Payload
+    # $payload.method = 'item.update'
+
+    $Parameters = @{
+        method = 'item.update'
     }
 
-    $payload = Get-Payload
-    $payload.method = 'item.update'
-
-
-    if (-not $NoProgress.IsPresent) {
-        $percentComplete = 100
-        Write-Progress -Activity "Updating Item:" -Status $ItemId -PercentComplete $percentComplete
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
     }
+
+    $params = @{}
+
     if ($item) {
         $properties = $Item.psObject.Properties | Select-Object Name, value
         $properties | ForEach-Object {
-            $payload.params.Add($_.name, $_.value)
+            $params.Add($_.name, $_.value)
         }
     } else {
         $payload.params.Add("itemid", $itemId)
-        if ($name) {$payload.params.Add("name", $name)}
-        if ($delay) {$payload.params.Add("delay", $delay)}
-        if($Disabled.IsPresent) {$payload.params.Add("status", 1)}
-        if ($key) {$payload.params.Add("key_", $key)}
+        if ($name) {$params.Add("name", $name)}
+        if ($delay) {params.Add("delay", $delay)}
+        if($Disabled.IsPresent) {$params.Add("status", 1)}
+        if ($key) {$params.Add("key_", $key)}
         if ($type) {
-            $types= @('ZabbixAgent','ZabbixTrapper','SimpleCheck','ZabbixInternal','WebItem','ExternalCheck','DatabaseMonitor','IPMIAgent','SSHAgent','TelnetAgent', `
-            'Calculation','JMXAgent','SNMPTrap','DependentItem','HTTPAgent','SNMPAgent','Script')
-            $typeIndex = $types.IndexOf($type)
-            $payload.params.Add("type", $typeIndex)
+            $types= @{
+                ZabbixAgent = 0
+                ZabbixTrapper = 2
+                SimpleCheck = 3
+                ZabbixInternal = 5
+                ZabbixAgentActive = 7 
+                ZabbixAggregate = 8
+                WebItem = 9
+                ExternalCheck = 10
+                DatabaseMonitor = 11
+                PMIAgent = 12
+                SSHAgent = 13
+                TelnetAgent = 14
+                Calculation = 15
+                JMXAgent = 16
+                SNMPTrap = 17
+                DependentItem = 18
+                HTTPAgent = 19
+                SNMPAgent = 10
+            }
+            #$typeIndex = $types.IndexOf($type)
+            $params.Add("type", $types[$type])
         }
         if ($Url) {
-            $payload.params.Add("url", $url)
+            $params.Add("url", $url)
         }
         if ($valueType) {
             $valueTypes = @('NumericFloat','Character','Log','NumericUnsigned','Text')
             $valueTypeIndex = $valueTypes.IndexOf($valueType)
-            $payload.params.Add("value_type", $valueTypeIndex)
+            $params.Add("value_type", $valueTypeIndex)
         }
         if ($allowTraps) {
-            $payload.params.Add("allow_traps", 1)
+            $params.Add("allow_traps", 1)
         }
         if ($AuthType) {
             if ($AuthType -in "Password","PublicKey") {
@@ -432,41 +481,46 @@ function Set-ZabbixItem() {
                 } else {
                     $authIndex = 1
                 }
-                $payload.params.Add("authtype", $authIndex)
+                $params.Add("authtype", $authIndex)
             } else {
                 $authIndex = @('none','Basic','NTLM','Kerberos').IndexOf($AuthType)
-                $payload.params.Add("authtype", $authIndex)
+                $params.Add("authtype", $authIndex)
             }
         }
-        if ($Description) {$payload.params.Add("description", $Description)}
-        if ($followRedirects) {$payload.params.Add("follow_redirects", 1)}
-        if ($httpHeaders) {$payload.params.Add("headers", $httpHeaders)}
-        if ($inventoryLink) {$payload.params.Add("inventory_link", $inventoryLink)}
-        if ($ipmiSensor) {$payload.params.Add("ipmi_sensor", $ipmiSensor)}
-        if ($JMXEndpoint) {$payload.params.Add("jmx_endpoint",$JMXEndpoint)}
-        if ($additionalParams) {$payload.params.Add("params", $additionalParams)}
-        if ($scriptParams) {$payload.params.Add("parameters", $scriptParams)}
+        if ($Description) {$params.Add("description", $Description)}
+        if ($followRedirects) {$params.Add("follow_redirects", 1)}
+        if ($httpHeaders) {$params.Add("headers", $httpHeaders)}
+        if ($inventoryLink) {$params.Add("inventory_link", $inventoryLink)}
+        if ($ipmiSensor) {$params.Add("ipmi_sensor", $ipmiSensor)}
+        if ($JMXEndpoint) {$params.Add("jmx_endpoint",$JMXEndpoint)}
+        if ($additionalParams) {$params.Add("params", $additionalParams)}
+        if ($scriptParams) {$params.Add("parameters", $scriptParams)}
         if ($postType) {
-            $postTypeIndex = @('Raw','JSON','XML').IndexOf($postType)
-            $payload.params.Add("post_type", $postTypeIndex)
+            $postTypeIndex = @('Raw','noop','JSON','XML').IndexOf($postType)
+            $params.Add("post_type", $postTypeIndex)
         }
-        if ($posts) {$payload.params.Add("posts", ($posts | ConvertTo-Json -Depth 10 -Compress))}
-        if ($queryFields) {$payload.params.Add("query_fields", $queryFields)}
+        if ($posts) {$params.Add("posts", ($posts | ConvertTo-Json -Depth 10 -Compress))}
+        if ($queryFields) {$params.Add("query_fields", $queryFields)}
         if ($requestMethod) {
-            $requestMethidIndex = @('GET','POST','PUT','HEAD').IndexOf($requestMethod)
-            $payload.params.Add("request_method", $requestMethidIndex)
+            $requestMethodIndex = @('GET','POST','PUT','HEAD').IndexOf($requestMethod)
+            $params.Add("request_method", $requestMethodIndex)
         }
         if ($retrieveMode) {
             $retrieveModeIndex = @('Body','Headers','Both').IndexOf($retrieveMode)
-            $payload.params.Add("retrieve_mode",$retrieveModeIndex)
+            $params.Add("retrieve_mode",$retrieveModeIndex)
         }
     }   
 
-    payload.Add("auth", $authcode)
+    #payload.Add("auth", $authcode)
 
-    $body = $payload | ConvertTo-Json -Depth 10 -Compress
+    $Parameters.Add("params", $params)
+
+    #$body = $payload | ConvertTo-Json -Depth 10 -Compress
+
     try {
-        $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        $response = Invoke-ZabbixAPI @Parameters
+
         if ($response.error) {
             throw $response.error.data
         } else {
@@ -616,10 +670,9 @@ function Set-ZabbixItem() {
     HTTP agent item field. Validate is host certificate authentic.
     .PARAMETER NoProgress
     Do not show progress.
-    .PARAMETER authcode
-    Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
+    .PARAMETER ProfileName
+    The nae of the saved profile to use.
     .OUTPUTS
     An object contioning the item Id(s) of updated item(s).
     #>
 }
-
