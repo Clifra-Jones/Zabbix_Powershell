@@ -1,3 +1,4 @@
+using namespace System.Generic.Collections
 function Get-ZabbixUserGroup() {
     [CmdletBinding()]
     Param(
@@ -19,7 +20,6 @@ function Get-ZabbixUserGroup() {
     # $payload.Add("auth", $authcode)
 
     $Parameters = @{}
-
     if ($profilename) {
         $Parameters.Add("ProfileName", $profilename)
     }
@@ -71,9 +71,9 @@ function Import-UserGroups() {
     )
 
     Begin {
-        if (-not $authcode) {
-            $authcode = Read-ZabbixConfig
-        }
+        # if (-not $authcode) {
+        #     $authcode = Read-ZabbixConfig
+        # }
 
         # $payload = Get-Payload
 
@@ -121,7 +121,7 @@ function Import-UserGroups() {
     }
 }
 
-function Add-UserGroup() {
+function Add-ZabbixUserGroup() {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)]
@@ -204,7 +204,7 @@ function Add-UserGroup() {
     }
 }
 
-function Set-UserGroup() {
+function Set-ZabbixUserGroup() {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory = $true)]
@@ -293,6 +293,53 @@ function Set-UserGroup() {
     } catch {
         throw $_
     }
+}
+
+function Add-ZabbixUserGroupMembers() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$GroupId,
+        [string[]]$Members,
+        [string]$ProfileName
+    )
+
+    $Parameters = @{
+        method = "usergroup.update"
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{
+        usrgrpid = $GroupId
+    }
+    $currentUsers = (Get-ZabbixUserGroup -GroupId -IncludeUsers).Users
+
+    $users = [List[string]]$currentUsers.userIds
+
+    foreach ($member in $members) {
+        if ($member -is [psobject]) {
+            $users.Add($Member.userId)
+        } else {
+            try {
+                $userId = (Get-ZabbixUser -UserId $member).Userid
+                $users.Add($userId)
+            } catch {
+                try {
+                    $userid = (Get-ZabbixUser -Username $member).UserId
+                    $users.Add($userId)
+                } catch {
+                    throw "Invalid Member: Member must be valid user object, UserId, or username or an array of the same."
+                }
+            }
+        }        
+    }
+
+    $params.Add(
+        "userIds", ($users.ToArray())
+    )
 }
 
 function Remove-ZabbixUserGroup() {

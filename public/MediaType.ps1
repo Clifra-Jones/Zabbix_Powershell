@@ -602,7 +602,7 @@ function Add-ZabbixMediaType() {
     #>
 }
 
-function Remove-MediaType() {
+function Remove-ZabbixMediaType() {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [Parameter(Mandatory = $true)]

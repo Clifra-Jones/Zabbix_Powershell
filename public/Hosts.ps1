@@ -1,5 +1,7 @@
 using namespace System.Collections.Generic
-function Get-ZabbixHostGroups() {
+
+#region HostGroups
+function Get-ZabbixHostGroup() {
     [CmdletBinding()]
     Param(
         [Parameter(ValueFromPipelineByPropertyName = $True)]
@@ -73,10 +75,208 @@ function Get-ZabbixHostGroups() {
     #>
 }
 
-function Get-ZabbixHosts() {
+function Add-ZabbixHostGroup() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$ProfileName
+    )
+
+    $Parameters = @{
+        method = "hostgroup.create"        
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{
+        name = $Name
+    }
+
+    $Parameters.Add("params", $params)
+
+    try {
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+}
+
+function Set-ZabbixHostGroup() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$GroupId,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$ProfileName
+    )
+
+    $Parameters = @{
+        method = "hostgroup.update"
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{
+        groupid = $GroupId
+        name = $Name
+    }
+
+    $Parameters.Add("params", $params)
+
+    try {
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+}
+
+function Remove-ZabbixHostGroup() {
+    [CmdletBinding(SupportsShouldProcess)]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$GroupId
+    )
+
+    $Parameters = @{
+        method = 'hostgroup.delete'
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @(
+        $GroupId
+    )
+
+    $Parameters.Add("params", $params)
+
+    $HostGroup = Get-ZabbixHostGroup -groupId $GroupId
+
+    if ($PSCmdlet.ShouldProcess("Delete", "Host group: $($HostGroup.Name)")) {
+        try {
+            $response = Invoke-ZabbixAPI @Parameters
+
+            if ($response.error) {
+                throw $response.error.data
+            }
+            return $response.result
+        } catch {
+            throw $_
+        }
+    }
+}
+
+function Add-ZabbixHostGroupMembers() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [string]$GroupId,
+        [ValidateScript(
+            {
+                if ((-not $_) -and (-not $Templates)) {
+                    throw "One or both of parameters HostIds and TeplateIds must be specified."
+                } else {
+                    $true
+                }
+            }
+        )]
+        [string[]]$HostIds,
+        [ValidateScript(
+            {
+                if ((-not $_) -and (-not $HostIds)) {
+                    throw "One or both of parameters HostIds and TeplateIds must be specified."
+                } else {
+                    $true
+                }
+            }
+        )]
+        [string[]]$TemplateIds
+    )
+
+    $Parameters = @{
+        method = "hostgroup.massadd"
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{
+        groups = @(
+            @{
+                groupId = $GroupId
+            }
+        )
+    }
+
+    if ($HostIds) {
+        $Hosts = [List[psobject]]::New()
+        foreach ($HostId in $HostIds) { 
+            $HostIds.Add(
+                @{
+                    hostid = $HostId}
+            )
+        }
+        $params.Add(
+            "hosts", ($Hosts.ToArray())
+        )
+    }
+
+    if ($TemplateIds) {
+        $Templates = [List[PSObject]]::New()
+        foreach($TemplateId in $TemplateIds) {
+            $Templates.Add(
+                @{
+                    templateId = $TemplateId
+                }
+            )
+        }
+        $Params.Add(
+            "templates", ($templates.ToArray())
+        )
+    }
+
+    $Parameters.Add("params", $params)
+
+    try {
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+}
+#endregion
+
+#region Hosts
+function Get-ZabbixHost() {
     [CmdletBinding()]
     Param(   
-        [string]$hostid,
+        [string]$HostId,
+        [string]$HostName,
         [string]$groupid,
         [string]$itemid,
         [string]$templateid,
@@ -109,8 +309,8 @@ function Get-ZabbixHosts() {
         $params.Add("groupids", $groupId)
     }
     if ($itemid) {
-        $params.Add("itemids", $itemId
-        )}
+        $params.Add("itemids", $itemId)
+    }
     if ($templateid) {
         $params.Add("templateids", $templateid)
     }
@@ -120,7 +320,7 @@ function Get-ZabbixHosts() {
         })
     }
     if ($includeItems) {
-        $.params.Add("selectItems", "extend")
+        $params.Add("selectItems", "extend")
     }
     if ($includeGroups) {
         $params.Add("selectGroups","extend")
@@ -130,6 +330,12 @@ function Get-ZabbixHosts() {
     }
     if ($includeParentTemplates) {
         $params.Add("selectParentTemplates", "extend")
+    }
+
+    if ($HostName) {
+        $params.Add("filter", @{
+            "host" = @($HostName)
+        })
     }
 
     #$payload.Add("auth", $authcode)
@@ -177,7 +383,22 @@ function Get-ZabbixHosts() {
     #>
 }
 
-function Get-HostInterfaces() {
+function Add-ZabbixHost() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [Alias('host')]
+        [string]$HostName,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Description,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [InventoryMode]$inventory_mode
+    )
+
+    write-host $inventory_mode.value__
+}
+
+function Get-HostInterface() {
     [CmdletBinding()]
     Param(
         [Parameter(

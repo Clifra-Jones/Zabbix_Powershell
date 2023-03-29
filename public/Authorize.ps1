@@ -5,25 +5,7 @@ function Get-ZabbixAuthCode() {
         [string]$Uri,
         [string]$Username,
         [securestring]$Password,
-        [ValidateScript(
-            {
-                if ($_ -and $StoreToProfile) {
-                    $true
-                } else {
-                    throw "Parameter StoreToProfile is required with the parameter ProfileName."
-                }
-            }
-        )]
         [string]$ProfileName,
-        [ValidateSet(
-            {
-                if ($_ -and $ProfileName) {
-                    $true
-                } else {
-                    throw "Parameter ProfileName is required with parameter StoreToProfile."
-                }
-            }
-        )]
         [switch]$StoreToProfile
     )
 
@@ -72,20 +54,27 @@ function Get-ZabbixAuthCode() {
                         Uri = $Uri
                         authcode = $authcode
                     }
-                }
+                }                
             } else {
                 $Profiles = Get-Content -Path $configFile | ConvertFrom-Json
                 if ($Profiles.$ProfileName) {
                     $Profiles.$ProfileName.Uri = $Uri
                     $Profiles.$ProfileName.authcode = $authcode
                 } else {
-                    $Profiles.Add($ProfileName, $Profile)
+                    $NewProfile = @{
+                        Uri = $Uri
+                        authcode = $authcode
+                    }
                 }
+                $Profiles | Add-Member -MemberType NoteProperty -Name $ProfileName -Value $NewProfile
             }
-            $Profiles | ConvertTo-Json | Out-File $configFile 
+            ConvertTo-Json $Profiles | Out-File $configFile             
         }
-        $CurrentCredentials.Uri = $Uri
-        $CurrentCredentials.authcode = $authcode
+        
+        $CurrentProfile = @{
+            Uri = $Uri 
+            autocode = $authcode
+        }
     } catch {
         Throw $_
     }
@@ -98,14 +87,34 @@ function Get-ZabbixAuthCode() {
     User must have a Zabbix logon. 
     If security settings for the user have changed, a new authorization token will be required.
     If username and password are omitted they will be prompted for.
+    .PARAMETER Uri
+    The Zabbix API Uri for you primary Zabbix Server.
     .PARAMETER Username
     Username to log in with.
     .PARAMETER Password
-    Password tl log in with. This MUST be a secure string.
+    Password to log in with. This MUST be a secure string.
     .PARAMETER storeToProfile
     Stores the authorization token in a configuration file in the directory .zabbix in the user's profile.
+    .PARAMETER ProfileName
+    The name to store the profile in. Must be used with the StoreToProfile Parameter.
+    If omitted the profile is stored as the default profile.
     .OUTPUTS
     The authorization token as a string.
+    .NOTES
+    This command As the alias Connect-ZabbixUse. Eventually the Get-ZabbixAuthcode command will be depreciated 
+    in favor of Connect-ZabbixUser.
+
+    The authcode will remain active until you log out with the Disconnect-ZabbixUser function (alias: Remove-ZabbixAuthCode)
+    unless the user has the autologoff property set.
+
+    If your authcode is saved in a profile and still active DO NOT execute this command again. Use the stored profile. This will
+    prevent multiple user sessions from being created.
+
+    If you execute this command without the StoreToProfile and ProfileName parameters the auth token will only be retained for the current session.
+    You may want to use this if you are using a SuperAdmin account to perform some functions and don't want
+    that authcode stored in you profile file.
+    Failing to disconnect in this situation will leave the session active if the user account does not have an autologoff property set.
+    Closing the powershell window WILL NOT log the user off. Neither will executing a Remove-Module command.
     #>
 }
 
@@ -140,8 +149,8 @@ function Remove-ZabbixAuthCode() {
 
     #$body = $payload | ConvertTo-Json -Depth 5 -Compress
 
-    if ($fromConfig) {
-        $response = $(Write-host "Warning! You are about to deactivate the authroization code from your profile. Continue? [N/y]" -ForegroundColor Yellow -NoNewline); `
+    if ($ProfileName) {
+        $response = $(Write-host "Warning! You are about to deactivate an authorization code from your profile. Continue? [N/y]" -ForegroundColor Yellow -NoNewline); `
         Read-Host
         if ($response -eq "y") {
             write-host "Operation canceled"
@@ -157,10 +166,26 @@ function Remove-ZabbixAuthCode() {
             if ($response.error) {
                 throw $response.error.data
             }
+            if ($ProfileName) {
+                $Profiles = Get-Content $configFile | ConvertFrom-Json
+                $Profiles.PSObject.Properties.Remove($ProfileName)
+                ConvertTo-Json $Profiles |Out-File $configFile
+            }
         } catch {
             $_
         }
     }
+    <#
+    .SYNOPSIS
+    Deactivate the current authcode.
+    .DESCRIPTION
+    Logs the user off and deactivates the API authorization code.
+    .PARAMETER ProfileName
+    The profile to log off. If the profile is not currently logged on an error will occur.
+    The profile entry will be removed from the profiles file.
+    This command wil not remove the default profile entry even of if the default profile is logged off!
+    If you are changing you default profile authorization code you should re-connect to save your default profile.
+    #>
 }
 
 Set-Alias -Name Disconnect-ZabbixUser -Value Remove-ZabbixAuthCode -Option ReadOnly
@@ -171,7 +196,13 @@ function Set-ZabbixProfile() {
         [string]$ProfileName
     )
 
-    $config = Get-Content -Path $configFile | ConvertFrom-Json
-    $CurrentCredentials.Uri = $config.$Uri
-    $CurrentCredentials.authcode = $Config.authcode
+    $CurrentProfile = (Read-ZabbixConfig -ProfileName $ProfileName)
+
+    <#
+    .SYNOPSIS
+    Sets the current active profile.
+    .DESCRIPTION
+    Sets the current active authentication code and URI to the saved profile name.
+    This DOES NOT issue a logon. The authorization code MUST be active.
+    #>
 }

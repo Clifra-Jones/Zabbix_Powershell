@@ -169,26 +169,6 @@ function Get-ZabbixItems() {
 function Set-ZabbixItem() {
     [CmdletBinding()]
     Param(
-        [ValidateScript(
-            {
-                if ($_ -and (
-                    $null -eq $ItemId -and $null -eq $Name -and $null -eq $Delay -and $null -eq $Disabled -and $null -eq $Key -and
-                    $null -eq $type -and $null -eq $Url -and $null -eq $ValueType -and $null -eq $allowTraps -and $null -eq $AuthType -and 
-                    $null -eq $Description -and $null -eq $followRedirects -and $null -eq $HttpHeaders -and $null -eq $History -and 
-                    $null -eq $HttpProxyString -and $null -eq $inventoryLink -and $null -eq $ipmiSensor -and $null -eq $JMXEndpoint -and 
-                    $null -eq $MasterItemId -and $null -eq $additionalParams -and $null -eq $PostType -and $bull -eq $Posts -and 
-                    $null -eq $PrivateKey -and $null -eq $PublicKey -and $null -eq $queryFields -and $null -eq $requestMethod -and
-                    $null -eq $retrieveMode -and $null -eq $sslCertFile -and $null -eq $snmpOID -and $null -eq $sslKeyFile -and 
-                    $null -eq $Timeout -and $null -eq $trapperHost -and $null -eq $Trends -and $null -eq $Units -and $null -eq $valueMapId -and 
-                    $null -eq $verifyHost -and $null -eq $verifyPeer
-                ) ) {
-                    $True
-                } else {
-                    throw "Property Item cannot be used with other Item properties."
-                }
-            }
-        )]
-        [string]$Item,
         [psobject]$ItemId,
         [string]$name,
         [string]$delay,
@@ -428,88 +408,109 @@ function Set-ZabbixItem() {
 
     $params = @{}
 
-    if ($item) {
-        $properties = $Item.psObject.Properties | Select-Object Name, value
-        $properties | ForEach-Object {
-            $params.Add($_.name, $_.value)
+    $params.Add("itemid", $itemId)
+    if ($name) {
+        $params.Add("name", $name)
+    }
+    if ($delay) {
+        params.Add("delay", $delay)
+    }
+    if($Disabled.IsPresent) {
+        $params.Add("status", 1)
+    }
+    if ($key) {
+        $params.Add("key_", $key)
+    }
+    if ($type) {            
+        $types= @{
+            ZabbixAgent = 0
+            ZabbixTrapper = 2
+            SimpleCheck = 3
+            ZabbixInternal = 5
+            ZabbixAgentActive = 7 
+            ZabbixAggregate = 8
+            WebItem = 9
+            ExternalCheck = 10
+            DatabaseMonitor = 11
+            PMIAgent = 12
+            SSHAgent = 13
+            TelnetAgent = 14
+            Calculation = 15
+            JMXAgent = 16
+            SNMPTrap = 17
+            DependentItem = 18
+            HTTPAgent = 19
+            SNMPAgent = 10
         }
-    } else {
-        $payload.params.Add("itemid", $itemId)
-        if ($name) {$params.Add("name", $name)}
-        if ($delay) {params.Add("delay", $delay)}
-        if($Disabled.IsPresent) {$params.Add("status", 1)}
-        if ($key) {$params.Add("key_", $key)}
-        if ($type) {            
-            $types= @{
-                ZabbixAgent = 0
-                ZabbixTrapper = 2
-                SimpleCheck = 3
-                ZabbixInternal = 5
-                ZabbixAgentActive = 7 
-                ZabbixAggregate = 8
-                WebItem = 9
-                ExternalCheck = 10
-                DatabaseMonitor = 11
-                PMIAgent = 12
-                SSHAgent = 13
-                TelnetAgent = 14
-                Calculation = 15
-                JMXAgent = 16
-                SNMPTrap = 17
-                DependentItem = 18
-                HTTPAgent = 19
-                SNMPAgent = 10
-            }
-            #$typeIndex = $types.IndexOf($type)
-            $params.Add("type", $types[$type])
-        }
-        if ($Url) {
-            $params.Add("url", $url)
-        }
-        if ($valueType) {
-            $valueTypes = @('NumericFloat','Character','Log','NumericUnsigned','Text')
-            $valueTypeIndex = $valueTypes.IndexOf($valueType)
-            $params.Add("value_type", $valueTypeIndex)
-        }
-        if ($allowTraps) {
-            $params.Add("allow_traps", 1)
-        }
-        if ($AuthType) {
-            if ($AuthType -in "Password","PublicKey") {
-                If ($AuthType -eq "Password") {
-                    $authIndex = 0
-                } else {
-                    $authIndex = 1
-                }
-                $params.Add("authtype", $authIndex)
+        #$typeIndex = $types.IndexOf($type)
+        $params.Add("type", $types[$type])
+    }
+    if ($Url) {
+        $params.Add("url", $url)
+    }
+    if ($valueType) {
+        $valueTypes = @('NumericFloat','Character','Log','NumericUnsigned','Text')
+        $valueTypeIndex = $valueTypes.IndexOf($valueType)
+        $params.Add("value_type", $valueTypeIndex)
+    }
+    if ($allowTraps) {
+        $params.Add("allow_traps", 1)
+    }
+    if ($AuthType) {
+        if ($AuthType -in "Password","PublicKey") {
+            If ($AuthType -eq "Password") {
+                $authIndex = 0
             } else {
-                $authIndex = @('none','Basic','NTLM','Kerberos').IndexOf($AuthType)
-                $params.Add("authtype", $authIndex)
+                $authIndex = 1
             }
+            $params.Add("authtype", $authIndex)
+        } else {
+            $authIndex = @('none','Basic','NTLM','Kerberos').IndexOf($AuthType)
+            $params.Add("authtype", $authIndex)
         }
-        if ($Description) {$params.Add("description", $Description)}
-        if ($followRedirects) {$params.Add("follow_redirects", 1)}
-        if ($httpHeaders) {$params.Add("headers", $httpHeaders)}
-        if ($inventoryLink) {$params.Add("inventory_link", $inventoryLink)}
-        if ($ipmiSensor) {$params.Add("ipmi_sensor", $ipmiSensor)}
-        if ($JMXEndpoint) {$params.Add("jmx_endpoint",$JMXEndpoint)}
-        if ($additionalParams) {$params.Add("params", $additionalParams)}
-        if ($scriptParams) {$params.Add("parameters", $scriptParams)}
-        if ($postType) {
-            $postTypeIndex = @('Raw','noop','JSON','XML').IndexOf($postType)
-            $params.Add("post_type", $postTypeIndex)
-        }
-        if ($posts) {$params.Add("posts", ($posts | ConvertTo-Json -Depth 10 -Compress))}
-        if ($queryFields) {$params.Add("query_fields", $queryFields)}
-        if ($requestMethod) {
-            $requestMethodIndex = @('GET','POST','PUT','HEAD').IndexOf($requestMethod)
-            $params.Add("request_method", $requestMethodIndex)
-        }
-        if ($retrieveMode) {
-            $retrieveModeIndex = @('Body','Headers','Both').IndexOf($retrieveMode)
-            $params.Add("retrieve_mode",$retrieveModeIndex)
-        }
-    }   
+    }
+    if ($Description) {
+        $params.Add("description", $Description)
+    }
+    if ($followRedirects) {
+        $params.Add("follow_redirects", 1)
+    }
+    if ($httpHeaders) {
+        $params.Add("headers", $httpHeaders)
+    }
+    if ($inventoryLink) {
+        $params.Add("inventory_link", $inventoryLink)
+    }
+    if ($ipmiSensor) {
+        $params.Add("ipmi_sensor", $ipmiSensor)
+    }
+    if ($JMXEndpoint) {
+        $params.Add("jmx_endpoint",$JMXEndpoint)
+    }
+    if ($additionalParams) {
+        $params.Add("params", $additionalParams)
+    }
+    if ($scriptParams) {
+        $params.Add("parameters", $scriptParams)
+    }
+    if ($postType) {
+        $postTypeIndex = @('Raw','noop','JSON','XML').IndexOf($postType)
+        $params.Add("post_type", $postTypeIndex)
+    }
+    if ($posts) {
+        $params.Add("posts", ($posts | ConvertTo-Json -Depth 10 -Compress))
+    }
+    if ($queryFields) {
+        $params.Add("query_fields", $queryFields)
+    }
+    if ($requestMethod) {
+        $requestMethodIndex = @('GET','POST','PUT','HEAD').IndexOf($requestMethod)
+        $params.Add("request_method", $requestMethodIndex)
+    }
+    if ($retrieveMode) {
+        $retrieveModeIndex = @('Body','Headers','Both').IndexOf($retrieveMode)
+        $params.Add("retrieve_mode",$retrieveModeIndex)
+    }
 
     #payload.Add("auth", $authcode)
 

@@ -3,12 +3,9 @@ using namespace System.Management.Automation
 
 # Private Variables
 #$Uri = "https://zabbix.balfourbeattyus.com/api_jsonrpc.php"
-$_CurrCreds = @{
-    Uri = $null
-    authcode = $null
-}
 
-New-Variable -Name CurrentCredentials -Value $_CurrCreds -Scope Script -Force
+#$DefaultProfile = Read-ZabbixConfig 
+Set-Variable -Name "CurrentProfile" -Value (Read-ZabbixConfig) -Scope Script
 
 $configPath = "$home/.zabbix"
 $configFile = "$configPath/auth.json"
@@ -24,6 +21,12 @@ function Get-Payload() {
 
 Set-Variable contentType -Option Constant -Value "application/json"
 
+enum InventoryMode {
+    Disabled = -1
+    Manual = 0
+    Automatic = 1
+}
+
 # private functions
 
 function Read-ZabbixConfig() {    
@@ -35,9 +38,13 @@ function Read-ZabbixConfig() {
         $ProfileName = 'default'
     }
 
-    $config = Get-Content $configFile | ConvertFrom-Json
+    if (Test-Path $configFile) {
+        $config = Get-Content $configFile | ConvertFrom-Json
     
-    return $config.$ProfileName
+        return $config.$ProfileName
+    } else {
+        return $null
+    }
 }
 
 . $PSScriptRoot/public/Authorize.ps1
@@ -64,7 +71,7 @@ function Invoke-ZabbixAPI() {
     if ($ProfileName) {
         $AuthProfile = Read-ZabbixConfig $ProfileName
     } else {
-        $AuthProfile = $CurrentCredentials
+        $AuthProfile = $CurrentProfile
     }
 
     $Uri = $AuthProfile.Uri
@@ -126,3 +133,4 @@ function Invoke-ZabbixAPI() {
     $response = Invoke-ZabbixAPI -Method "host.get" -params $params    
     #>
 }
+

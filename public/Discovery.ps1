@@ -1,4 +1,4 @@
-function Get-ZabbixDiscoveryRules() {
+function Get-ZabbixDiscoveryRule() {
     [CmdletBinding()]
     Param(
         [string]$DRuleId,
@@ -142,121 +142,125 @@ function Get-ZabbixDiscoveryRuleCheck() {
     }
 }
 
-function Add-ZabbixDiscoveryRules() {
+function Add-ZabbixDiscoveryRule() {
     [CmdletBinding()]
     Param(
-        [Parameter(
-            Mandatory = $true,
-            ValueFromPipeline = $true
-        )]
-        [psobject]$DRule,
+        [Parameter(Mandatory = $true)]
+        [psobject]$DRuleId,
+        [Parameter(Mandatory = $true)]
+        [string]$IpRange,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$Delay,
+        [string]$ProxyHostId,
+        [switch]$Disabled,
+        [psobject]$Checks,
         [string]$ProfileName
     )
 
-    Begin {
-        # if (-not $authcode) {
-        #     $authcode = Read-ZabbixConfig
-        # }
+    # if (-not $authcode) {
+    #     $authcode = Read-ZabbixConfig
+    # }
 
-        # $payload = Get-Payload
+    # $payload = Get-Payload
 
-        # $Payload.method = 'drule.create'
-        # $Payload.Add("auth", $authcode)        
-        $Parameters = @{
-            method = 'drule.create'
-        }
-
-        if ($ProfileName) {
-            $Parameters.Add("ProfileName", $ProfileName)
-        }
+    # $Payload.method = 'drule.create'
+    # $Payload.Add("auth", $authcode)        
+    $Parameters = @{
+        method = 'drule.create'
     }
 
-    Process {
-        $Params = @{}
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
 
-        $params.Add("name", $DRule.Name)
-        $params.Add("iprange", $DRule.iprange)
-        if ($DRule.Checks) {
-            $checks= @()
-            foreach ($dcheck in $DRule.checks) {
-                switch ($dcheck.dcheckid) {
-                    "10" {
-                        $check = @{
-                            type = $dcheck.type
-                            ports = $dcheck.ports
-                            key_ = $dcheck.key_
-                            snmp_community = $dcheck.snmp_community
-                            uniq = $dcheck.uniq
-                        }
+    $Params = @{}
+
+    $params.Add("name", $DRule.Name)
+    $params.Add("iprange", $DRule.iprange)
+
+    if ($Checks) {
+        $dchecks= @()
+        foreach ($dcheck in $checks) {
+            switch ($dcheck.dcheckid) {
+                "10" {
+                    $check = @{
+                        type = $dcheck.type
+                        ports = $dcheck.ports
+                        key_ = $dcheck.key_
+                        snmp_community = $dcheck.snmp_community
+                        uniq = $dcheck.uniq
                     }
-                    "11" {
-                        $check = @{
-                            type = $dcheck.type
-                            ports = $dcheck.ports
-                            key_ = $dcheck.key_
-                            snmp_community = $dcheck.snmp_community
-                            uniq = $dcheck.uniq
-                        }
+                }
+                "11" {
+                    $check = @{
+                        type = $dcheck.type
+                        ports = $dcheck.ports
+                        key_ = $dcheck.key_
+                        snmp_community = $dcheck.snmp_community
+                        uniq = $dcheck.uniq
                     }
-                    "13" {
-                        $check = @{
-                            type = $dcheck.type
-                            ports= $dcheck.ports
-                            key_ = $dcheck.key_
-                            snmpv3_contextname = $dcjeck.snmpv3_contextname
-                            snmpv3_securityname = $dcheck.snmpv3_securityname                            
-                            uniq = $dcheck.uniq
-                        }
-                        switch ($dcheck.snmpv3_securitylevel) {
-                            "1" {                                    
-                                $checks.Add("snmpv3_authprotocol", $dcheck.snmpv3_authprotocol)
-                                $checks.Add("snmpv3_authpassphrase", $dcheck.snmpv3_authpassphrase)
-                            }
-                            "2" {
-                                $checks.Add("snmpv3_authprotocol", $dcheck.snmpv3_authprotocol)
-                                $checks.Add("snmpv3_authpassphrase", $dcheck.snmpv3_authpassphrase)
-                                $checks.Add("snmpv3_privprotocol", $dcheck.snmpv3_privprotocol)
-                                $checks.Add("snmpv3_privpassphrase", $dcheck.snmpv3_privpassphrase)
-                            }
-                        }
+                }
+                "13" {
+                    $check = @{
+                        type = $dcheck.type
+                        ports= $dcheck.ports
+                        key_ = $dcheck.key_
+                        snmpv3_contextname = $dcjeck.snmpv3_contextname
+                        snmpv3_securityname = $dcheck.snmpv3_securityname                            
+                        uniq = $dcheck.uniq
                     }
-                    "9" {
-                        $check = @{
-                            type = $dcheck.type
-                            port = $dcheck.port
-                            key_ = $dcheck.Key_
-                            uniq = $dcheck.uniq
+                    switch ($dcheck.snmpv3_securitylevel) {
+                        "1" {                                    
+                            $check.Add("snmpv3_authprotocol", $dcheck.snmpv3_authprotocol)
+                            $check.Add("snmpv3_authpassphrase", $dcheck.snmpv3_authpassphrase)
                         }
-                    }
-                    default {
-                        $check = @{
-                            type = $dcheck.type
-                            port = $dcheck.port
+                        "2" {
+                            $check.Add("snmpv3_authprotocol", $dcheck.snmpv3_authprotocol)
+                            $check.Add("snmpv3_authpassphrase", $dcheck.snmpv3_authpassphrase)
+                            $check.Add("snmpv3_privprotocol", $dcheck.snmpv3_privprotocol)
+                            $check.Add("snmpv3_privpassphrase", $dcheck.snmpv3_privpassphrase)
                         }
                     }
                 }
-                $checks += $check
+                "9" {
+                    $check = @{
+                        type = $dcheck.type
+                        port = $dcheck.port
+                        key_ = $dcheck.Key_
+                        uniq = $dcheck.uniq
+                    }
+                }
+                default {
+                    $check = @{
+                        type = $dcheck.type
+                        port = $dcheck.port
+                    }
+                }
             }
-        }
-        $params.Add("dchecks", $checks)
-
-        #$body = $payload | ConvertTo-Json -Depth 10 #-Compress
-
-        $Parameters.Add("params", $params)
-
-        try {
-            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
-            $response = Invoke-ZabbixAPI @Parameters
-
-            if ($response.error) {
-                throw $response.error.data
-            }
-            return $response.result
-        } catch {
-            throw $_
+            $dchecks += $check
         }
     }
+
+    $params.Add("dchecks", $dchecks)
+
+    #$body = $payload | ConvertTo-Json -Depth 10 #-Compress
+
+    $Parameters.Add("params", $params)
+
+    try {
+        #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
 }
+
 
 function Set-ZabbixDiscoveryRule() {
     [CmdletBinding()]
