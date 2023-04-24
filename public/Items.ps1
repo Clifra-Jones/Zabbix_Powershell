@@ -170,221 +170,76 @@ function Set-ZabbixItem() {
     [CmdletBinding()]
     Param(
         [psobject]$ItemId,
-        [string]$name,
-        [string]$delay,
+        [string]$Name,
+        [string]$Delay,
         [switch]$Disabled,
-        [string]$key,
-        [ValidateSet('ZabbixAgent','ZabbixTrapper','SimpleCheck','ZabbixInternal','ZabbixAgentActive','ZabbixAggregate',
-                      'Webitem', 'ExternalCheck','DatabaseMonitor', 'IPMIAgent','SSHAgent','TelnetAgent','Calculated',
-                      'JMXAgent','SNMPTrap','DependentItem','HTTPAgent','SNMPAgent')]
-        [ValidateScript(
-            {
-                if ($_ -ne "HTTPAgent") {
-                    Throw "Parameter URL only valid for HTTPAgent Item type."
-                }
-            }
-        )]        
-        [string]$type,
+        [string]$Key,
+        [ValidateScript({$_ -is [ItemType]})] 
+        [ItemType]$Type,
+        [ValidateScript({ $_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter URL only valid when parameter Type -s HTTPAgent")]
         [string]$Url,
-        [ValidateSet('NumericFloat','Character','Log','NumericUnsigned','Text')]
-        [string]$valueType,
+        [ValidateScript({$_ -is [ValueTYpe]})]
+        [ItemValueType]$ValueType,
         [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter allowTraps only valid for HTTPAgent Item index."
-                }
-            }
-        )]
+            {$_.IsPresent -and $type -eq [ItemType]::HTTPAgent}, ErrprMessage = "Parameter allowTraps only valid for HTTPAgent Item index.")]
         [switch]$allowTraps,
         [ValidateSet('none','Basic','NTLM','Kerberos','Password','PublicKey')]
         [ValidateScript(
-            {
-                if ($type -ne "SSHAgent" -and $type -ne "HTTPAgent") {
-                    throw "Parameter AuthType is only valid for SSHAGent and HTTPAgent Item types."
-                } elseif ($AuthType -in "Password","PublicKey") {
-                    if ($type -ne "SSHAGent") {
-                        throw "AuthType Password amd PublicKey are only valid for SSHAgent Item types."
-                    }                    
-                } else {
-                    if ($type -ne "HTTPAgent") {
-                        throw "AuthType none, Basic, NTLM and Kerberos are only valid for HTTPAgent Item types."
-                    }
-                }
-            }
-        )]
-        [string]$AuthType,
+            {$type -eq [ItemType]::SSHAgent  -and ($_ -eq [ItemAuthType]::Password -or $_ -eq [ItemAuthType]::PublicKey)}, 
+                ErrorMessage = "Parameter AuthType is only valid for SSHAGent and HTTPAgent Item types.")]
+        [ItemAuthType]$AuthType,
         [string]$Description,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter followRedirects is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]]::HTTPAgent}, ErrorMessage = "Parameter followRedirects is only valid for HTTPAgent Item type.")]
         [switch]$followRedirects,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter httpHeaders is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter httpHeaders is only valid for HTTPAgent Item type.")]
         [psobject]$httpHeaders,
         [string]$History,
         [string]$httpProxyString,
         [int]$inventoryLink,
-        [ValidateScript(
-            {
-                if ($type -ne "IPMIAgent") {
-                    throw "Parameter ipmiSensor is only valid for IPMIAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::IPMIAgent}, ErrorMessage = "Parameter ipmiSensor is only valid for IPMIAgent Item type.")]
         [string]$ipmiSensor,
-        [ValidateScript(
-            {
-                if ($type -ne "JMXAgent") {
-                    throw "Parameter JMXEndpoint is only valid for JMXAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::JMXAgent}, ErrorMessage = "Parameter JMXEndpoint is only valid for JMXAgent Item type.")]
         [string]$JMXEndpoint,
         [int]$MasterItemId,
-        [ValidateScript(
-            {
-                if ($type -notin 'SSHAgent','TelnetAgent','DatabaseMonitor','Script') {
-                    throw "Parameter additionalParams onlu valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types."
-                }
-            }
-        )]
-        [psObject]$additionalParams,
-        [ValidateScript(
-            {
-                if ($type -ne "Script") {
-                    throw "Parameter scriptParams is only valid got Script Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script}, 
+            ErrorMessage = "Parameter AdditionalParams only valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types.")]
+        [psObject]$AdditionalParams,
+        [ValidateScript({$_ -and $type -eq [ItemType]::Script}, ErrorMessage = "Parameter ScriptParams is only valid got Script Item type.")]
         [psobject]$scriptParams,
         [ValidateSet('Raw','JSON','XML')]
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter postType is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [string]$postType,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter posts is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [psobject]$posts,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter postType is only valid for HTTPAgent Item type.")]
+        [ItemPostType]$PostType,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter posts is only valid for HTTPAgent Item type.")]
+        [psobject]$Posts,
         [string]$privateKey,
         [string]$publicKey,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter queryFields is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [psobject]$queryFields,
-        [ValidateSet('GET','POST','PUT','HEAD')]
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter requestMethod is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [string]$requestMethod,
-        [ValidateScript(
-            {
-                if ($type -ne "HttpAgent") {
-                    throw "Parameter retrieveMOde is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [ValidateSet('Body','Headers','Both')]
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter QueryFields is only valid for HTTPAgent Item type.")]
+        [psobject]$QueryFields,        
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter RequestMethod is only valid for HTTPAgent Item type.")]
+        [RequestMethod]$requestMethod,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
+        [ValidateScript({$_ -eq [RetrieveMode]::Header -and $RequestMethod -eq [RequestMethod]::Head}, 
+            ErrorMessage = "If Parameter RetrieveMOde is set to Headers, Parameter RequestMethid must be set to Head" )]
         [string]$retrieveMode,
-        [ValidateScript(
-            {
-                if ($type -ne "SNMPAgent") {
-                    throw "Parameter snmpOID os only valid for SNMPAgent item type"
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::SNMPAgent}, ErrorMessage = "Parameter snmpOID os only valid for SNMPAgent item type")]
         [string]$snmpOID,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
-        [string]$sslCertFile,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
-        [string]$sslKeyFile,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
-        [securestring]$sslKeyPassword,
-        [string[]]$httpStatusCodes,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -ne [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslCertFile is only valid for HTTPAgent item type.")]
+        [string]$SslCertFile,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyFile is only valid for HTTPAgent item type.")]
+        [string]$SslKeyFile,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyPassword is only valid for HTTPAgent item type.")]
+        [securestring]$SslKeyPassword,
+        [string[]]$StatusCodes,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [string]$Timeout,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [string]$trapperHost,
         [string]$Trends,
         [string]$Units,
         [string]$valueMapId,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyHost,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyPeer,
         [switch]$NoProgress,
         [string]$ProfileName
@@ -422,52 +277,20 @@ function Set-ZabbixItem() {
         $params.Add("key_", $key)
     }
     if ($type) {            
-        $types= @{
-            ZabbixAgent = 0
-            ZabbixTrapper = 2
-            SimpleCheck = 3
-            ZabbixInternal = 5
-            ZabbixAgentActive = 7 
-            ZabbixAggregate = 8
-            WebItem = 9
-            ExternalCheck = 10
-            DatabaseMonitor = 11
-            PMIAgent = 12
-            SSHAgent = 13
-            TelnetAgent = 14
-            Calculation = 15
-            JMXAgent = 16
-            SNMPTrap = 17
-            DependentItem = 18
-            HTTPAgent = 19
-            SNMPAgent = 10
-        }
         #$typeIndex = $types.IndexOf($type)
-        $params.Add("type", $types[$type])
+        $params.Add("type", $type.Value__)
     }
     if ($Url) {
         $params.Add("url", $url)
     }
-    if ($valueType) {
-        $valueTypes = @('NumericFloat','Character','Log','NumericUnsigned','Text')
-        $valueTypeIndex = $valueTypes.IndexOf($valueType)
-        $params.Add("value_type", $valueTypeIndex)
+    if ($ValueType) {
+        $params.Add("value_type", $ValueType.Value__)
     }
     if ($allowTraps) {
         $params.Add("allow_traps", 1)
     }
     if ($AuthType) {
-        if ($AuthType -in "Password","PublicKey") {
-            If ($AuthType -eq "Password") {
-                $authIndex = 0
-            } else {
-                $authIndex = 1
-            }
-            $params.Add("authtype", $authIndex)
-        } else {
-            $authIndex = @('none','Basic','NTLM','Kerberos').IndexOf($AuthType)
-            $params.Add("authtype", $authIndex)
-        }
+            $params.Add("authtype", $AuthType.Value__)
     }
     if ($Description) {
         $params.Add("description", $Description)
@@ -494,8 +317,7 @@ function Set-ZabbixItem() {
         $params.Add("parameters", $scriptParams)
     }
     if ($postType) {
-        $postTypeIndex = @('Raw','noop','JSON','XML').IndexOf($postType)
-        $params.Add("post_type", $postTypeIndex)
+        $params.Add("post_type", $PostType.Value__)
     }
     if ($posts) {
         $params.Add("posts", ($posts | ConvertTo-Json -Depth 10 -Compress))
@@ -504,12 +326,10 @@ function Set-ZabbixItem() {
         $params.Add("query_fields", $queryFields)
     }
     if ($requestMethod) {
-        $requestMethodIndex = @('GET','POST','PUT','HEAD').IndexOf($requestMethod)
-        $params.Add("request_method", $requestMethodIndex)
+        $params.Add("request_method", $requestMethod.value__)
     }
     if ($retrieveMode) {
-        $retrieveModeIndex = @('Body','Headers','Both').IndexOf($retrieveMode)
-        $params.Add("retrieve_mode",$retrieveModeIndex)
+        $params.Add("retrieve_mode",$retrieveMode.Value__)
     }
 
     #payload.Add("auth", $authcode)
@@ -681,222 +501,77 @@ function Set-ZabbixItem() {
 function Add-ZabbixItem() {
     [CmdletBinding()]
     Param(
-        [string]$HostId,
-        [string]$name,
-        [string]$delay,
+        [psobject]$ItemId,
+        [string]$Name,
+        [string]$Delay,
         [switch]$Disabled,
-        [string]$key,
-        [ValidateSet('ZabbixAgent','ZabbixTrapper','SimpleCheck','ZabbixInternal','ZabbixAgentActive','ZabbixAggregate',
-                      'Webitem', 'ExternalCheck','DatabaseMonitor', 'IPMIAgent','SSHAgent','TelnetAgent','Calculated',
-                      'JMXAgent','SNMPTrap','DependentItem','HTTPAgent','SNMPAgent')]
-        [ValidateScript(
-            {
-                if ($_ -ne "HTTPAgent") {
-                    Throw "Parameter URL only valid for HTTPAgent Item type."
-                }
-            }
-        )]        
-        [string]$type,
+        [string]$Key,
+        [ValidateScript({$_ -is [ItemType]})] 
+        [ItemType]$Type,
+        [ValidateScript({ $_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter URL only valid when parameter Type -s HTTPAgent")]
         [string]$Url,
-        [ValidateSet('NumericFloat','Character','Log','NumericUnsigned','Text')]
-        [string]$valueType,
+        [ValidateScript({$_ -is [ValueTYpe]})]
+        [ItemValueType]$ValueType,
         [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter allowTraps only valid for HTTPAgent Item index."
-                }
-            }
-        )]
+            {$_.IsPresent -and $type -eq [ItemType]::HTTPAgent}, ErrprMessage = "Parameter allowTraps only valid for HTTPAgent Item index.")]
         [switch]$allowTraps,
         [ValidateSet('none','Basic','NTLM','Kerberos','Password','PublicKey')]
         [ValidateScript(
-            {
-                if ($type -ne "SSHAgent" -and $type -ne "HTTPAgent") {
-                    throw "Parameter AuthType is only valid for SSHAGent and HTTPAgent Item types."
-                } elseif ($AuthType -in "Password","PublicKey") {
-                    if ($type -ne "SSHAGent") {
-                        throw "AuthType Password amd PublicKey are only valid for SSHAgent Item types."
-                    }                    
-                } else {
-                    if ($type -ne "HTTPAgent") {
-                        throw "AuthType none, Basic, NTLM and Kerberos are only valid for HTTPAgent Item types."
-                    }
-                }
-            }
-        )]
-        [string]$AuthType,
+            {$type -eq [ItemType]::SSHAgent  -and ($_ -eq [ItemAuthType]::Password -or $_ -eq [ItemAuthType]::PublicKey)}, 
+                ErrorMessage = "Parameter AuthType is only valid for SSHAGent and HTTPAgent Item types.")]
+        [ItemAuthType]$AuthType,
         [string]$Description,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter followRedirects is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]]::HTTPAgent}, ErrorMessage = "Parameter followRedirects is only valid for HTTPAgent Item type.")]
         [switch]$followRedirects,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter httpHeaders is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter httpHeaders is only valid for HTTPAgent Item type.")]
         [psobject]$httpHeaders,
         [string]$History,
         [string]$httpProxyString,
         [int]$inventoryLink,
-        [ValidateScript(
-            {
-                if ($type -ne "IPMIAgent") {
-                    throw "Parameter ipmiSensor is only valid for IPMIAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::IPMIAgent}, ErrorMessage = "Parameter ipmiSensor is only valid for IPMIAgent Item type.")]
         [string]$ipmiSensor,
-        [ValidateScript(
-            {
-                if ($type -ne "JMXAgent") {
-                    throw "Parameter JMXEndpoint is only valid for JMXAgent Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::JMXAgent}, ErrorMessage = "Parameter JMXEndpoint is only valid for JMXAgent Item type.")]
         [string]$JMXEndpoint,
         [int]$MasterItemId,
-        [ValidateScript(
-            {
-                if ($type -notin 'SSHAgent','TelnetAgent','DatabaseMonitor','Script') {
-                    throw "Parameter additionalParams onlu valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types."
-                }
-            }
-        )]
-        [psObject]$additionalParams,
-        [ValidateScript(
-            {
-                if ($type -ne "Script") {
-                    throw "Parameter scriptParams is only valid got Script Item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script}, 
+            ErrorMessage = "Parameter AdditionalParams only valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types.")]
+        [psObject]$AdditionalParams,
+        [ValidateScript({$_ -and $type -eq [ItemType]::Script}, ErrorMessage = "Parameter ScriptParams is only valid got Script Item type.")]
         [psobject]$scriptParams,
         [ValidateSet('Raw','JSON','XML')]
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter postType is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [string]$postType,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter posts is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [psobject]$posts,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter postType is only valid for HTTPAgent Item type.")]
+        [ItemPostType]$PostType,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter posts is only valid for HTTPAgent Item type.")]
+        [psobject]$Posts,
         [string]$privateKey,
         [string]$publicKey,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter queryFields is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [psobject]$queryFields,
-        [ValidateSet('GET','POST','PUT','HEAD')]
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter requestMethod is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [string]$requestMethod,
-        [ValidateScript(
-            {
-                if ($type -ne "HttpAgent") {
-                    throw "Parameter retrieveMOde is only valid for HTTPAgent Item type."
-                }
-            }
-        )]
-        [ValidateSet('Body','Headers','Both')]
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."                    
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter QueryFields is only valid for HTTPAgent Item type.")]
+        [psobject]$QueryFields,        
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter RequestMethod is only valid for HTTPAgent Item type.")]
+        [RequestMethod]$requestMethod,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
+        [ValidateScript({$_ -eq [RetrieveMode]::Header -and $RequestMethod -eq [RequestMethod]::Head}, 
+            ErrorMessage = "If Parameter RetrieveMOde is set to Headers, Parameter RequestMethid must be set to Head" )]
         [string]$retrieveMode,
-        [ValidateScript(
-            {
-                if ($type -ne "SNMPAgent") {
-                    throw "Parameter snmpOID os only valid for SNMPAgent item type"
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::SNMPAgent}, ErrorMessage = "Parameter snmpOID os only valid for SNMPAgent item type")]
         [string]$snmpOID,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
-        [string]$sslCertFile,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
-        [string]$sslKeyFile,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
-        [securestring]$sslKeyPassword,
-        [string[]]$httpStatusCodes,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -ne [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslCertFile is only valid for HTTPAgent item type.")]
+        [string]$SslCertFile,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyFile is only valid for HTTPAgent item type.")]
+        [string]$SslKeyFile,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyPassword is only valid for HTTPAgent item type.")]
+        [securestring]$SslKeyPassword,
+        [string[]]$StatusCodes,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [string]$Timeout,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [string]$trapperHost,
         [string]$Trends,
         [string]$Units,
         [string]$valueMapId,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyHost,
-        [ValidateScript(
-            {
-                if ($type -ne "HTTPAgent") {
-                    throw "Parameter retrieveMode is only valid for HTTPAgent item type."
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyPeer,
         [switch]$NoProgress,
         [string]$ProfileName
@@ -917,52 +592,19 @@ function Add-ZabbixItem() {
     if($Disabled.IsPresent) {$params.Add("status", 1)}
     if ($key) {$params.Add("key_", $key)}
     if ($type) {            
-        $types= @{
-            ZabbixAgent = 0
-            ZabbixTrapper = 2
-            SimpleCheck = 3
-            ZabbixInternal = 5
-            ZabbixAgentActive = 7 
-            ZabbixAggregate = 8
-            WebItem = 9
-            ExternalCheck = 10
-            DatabaseMonitor = 11
-            PMIAgent = 12
-            SSHAgent = 13
-            TelnetAgent = 14
-            Calculation = 15
-            JMXAgent = 16
-            SNMPTrap = 17
-            DependentItem = 18
-            HTTPAgent = 19
-            SNMPAgent = 10
-        }
-        #$typeIndex = $types.IndexOf($type)
-        $params.Add("type", $types[$type])
+        $params.Add("type", $type.value__)
     }
     if ($Url) {
         $params.Add("url", $url)
     }
     if ($valueType) {
-        $valueTypes = @('NumericFloat','Character','Log','NumericUnsigned','Text')
-        $valueTypeIndex = $valueTypes.IndexOf($valueType)
-        $params.Add("value_type", $valueTypeIndex)
+        $params.Add("value_type", $valueType.Value__)
     }
     if ($allowTraps) {
         $params.Add("allow_traps", 1)
     }
     if ($AuthType) {
-        if ($AuthType -in "Password","PublicKey") {
-            If ($AuthType -eq "Password") {
-                $authIndex = 0
-            } else {
-                $authIndex = 1
-            }
-            $params.Add("authtype", $authIndex)
-        } else {
-            $authIndex = @('none','Basic','NTLM','Kerberos').IndexOf($AuthType)
-            $params.Add("authtype", $authIndex)
-        }
+            $params.Add("authtype", $authType.Value__)
     }
     if ($Description) {$params.Add("description", $Description)}
     if ($followRedirects) {$params.Add("follow_redirects", 1)}
@@ -973,18 +615,15 @@ function Add-ZabbixItem() {
     if ($additionalParams) {$params.Add("params", $additionalParams)}
     if ($scriptParams) {$params.Add("parameters", $scriptParams)}
     if ($postType) {
-        $postTypeIndex = @('Raw','noop','JSON','XML').IndexOf($postType)
-        $params.Add("post_type", $postTypeIndex)
+        $params.Add("post_type", $postType.Value)
     }
     if ($posts) {$params.Add("posts", ($posts | ConvertTo-Json -Depth 10 -Compress))}
     if ($queryFields) {$params.Add("query_fields", $queryFields)}
     if ($requestMethod) {
-        $requestMethodIndex = @('GET','POST','PUT','HEAD').IndexOf($requestMethod)
-        $params.Add("request_method", $requestMethodIndex)
+        $params.Add("request_method", $requestMethod.Value__)
     }
     if ($retrieveMode) {
-        $retrieveModeIndex = @('Body','Headers','Both').IndexOf($retrieveMode)
-        $params.Add("retrieve_mode",$retrieveModeIndex)
+        $params.Add("retrieve_mode",$retrieveMode.Value)
     }
 
     $Parameters.add("params", $params)

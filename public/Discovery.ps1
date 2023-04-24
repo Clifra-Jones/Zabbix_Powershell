@@ -264,116 +264,50 @@ function Add-ZabbixDiscoveryRule() {
 
 function Set-ZabbixDiscoveryRule() {
     [CmdletBinding()]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
         [Parameter(Mandatory = $true)]
-        [string]$DruleId,
-        [ValidateSet('SNMPv1 agent','IMAP,SNMPv2 agent','ICMP ping','SMTP','LDAP','FTP','NNTP','HTTP','POP','TCP','Telnet','Zabbix agent','HTTPS','SSH','SNMPv3 agent')]   
-        [int]$Type,
+        [string]$DruleId,        
+        [CheckType]$Type,
         [string]$IpRange,
-        [ValidateScript(
-            {
-                if ($_) {
-                    if ($Key -or $Ports -or $Snmp_Community -or $Snmpv3_Authpassphrase -or $Snmpv3_Authprotocol `
-                        -or $Snmpv3_Contextname -or $Snmpv3_Privpassphrase -or $Snmpv3_Securitylevel -or $Snmpv3_Securityname `
-                        -or $type -or $Unique -or $HostNameSource -or $VisableNameSource) {
-                            throw "Parameter Checks canno tbe used with other check Parameters"
-                        }
-                } else {
-                    $true
-                }
-            }
-        )]
-        [PSObject]$Checks,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Key,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Ports,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateScript(
-            {
-                if ($_ -and ($type -in 'SNMPv1 agent','IMAP,SNMPv2 agent','SNMPv3 agent')) {
-                    $true
-                } else {
-                    throw "Parameter Snmp_Community can only be used with Type 'SNMPv1 agent','IMAP,SNMPv2 agent', and 'SNMPv3 agent'"
-                }
-            }
+            {$_ -and ($type -in 10,7,11,13)}, 
+            ErrorMessage = "Parameter Snmp_Community can only be used with Parameter Type as 'SNMPv1 agent', 'IMAP,SNMPv2 agent', or 'SNMPv3 agent'"
         )]
         [string]$Snmp_Community,
-        [ValidateScript(
-            {
-                if ($_ -and ($type -eq 'SNMPv3 agent' -and ($Snmpv3_Securitylevel -in 'authNoPriv','authPriv') ) ) {
-                    $true
-                } else {
-                    throw "Parameter can only be used with Parameter type set to 'SNMPv3 agent' and parameter Snmpv3_Securitylevel set to 'authNoPriv' or'authPriv'"
-                }
-            }
-        )]
-        [securestring]$Snmpv3_Authpassphrase,
-        [ValidateSet('SHA1','SHA224','SHA256','SHA384','SHA512')]
-        [ValidateScript(
-            {
-                if ($_ -and $type -eq 'SNMPv3 agent') {
-                    $true
-                } else {
-                    throw "Parameter Snmpv3_Authprotocol can only be used when parameter Type is set to 'SNMPv3 agent'."
-                }
-            }
-        )]
-        [string]$Snmpv3_Authprotocol,
-        [ValidateScript(
-            {
-                if ($_ -and $type -eq 'SNMPv3 agent') {
-                    $true
-                } else {
-                    throw "Parameter Snmpv3_Contextname can only be used when parameter Type is set to 'SNMPv3 agent'."
-                }
-            }
-        )]
-        [string]$Snmpv3_Contextname,
-        [ValidateScript(
-            {
-                if ($_ -and $type -eq 'SNMPv3 agent') {
-                    $true
-                } else {
-                    throw "Parameter Snmpv3_Privpassphrase can only be used when parameter Type is set to 'SNMPv3 agent'."
-                }
-            }
-        )]
-        [securestring]$Snmpv3_Privpassphrase,
-        [ValidateSet('Aes128','AES192','AES256','AES192C','AES256C')]
-        [ValidateScript(
-            {
-                if ($_ -and $type -eq 'SNMPv3 agent') {
-                    $true
-                } else {
-                    throw "Parameter Snmpv3_Protocol can only be used when parameter Type is set to 'SNMPv3 agent'."
-                }
-            }
-        )]
-        [string]$Snmpv3_PrivProtocol,
-        [ValidateSet('noAuthNoPriv','authNoPriv','authPriv')]
-        [ValidateScript(
-            {
-                if ($_ -and $type -eq 'SNMPv3 agent') {
-                    $true
-                } else {
-                    throw "Parameter Snmpv3_Securitylevel can only be used when parameter Type is set to 'SNMPv3 agent'."
-                }
-            }
-        )]
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Securitylevel can only be used when parameter Type is set to 'SNMPv3 agent'.")]
         [string]$Snmpv3_Securitylevel,
-        [ValidateScript(
-            {
-                if ($_ -and $type -eq 'SNMPv3 agent') {
-                    $true
-                } else {
-                    throw "Parameter Snmpv3_Securityname can only be used when parameter Type is set to 'SNMPv3 agent'."
-                }
-            }
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({$_ -and ($type -eq ([CheckType]::SNMPv3_agent) -and ($Snmpv3_Securitylevel -in 'authNoPriv','authPriv'))}
         )]
-        [string]$Snmpv3_Securityname,
+        [string]$Snmpv3_Authpassphrase,
+        [Parameter(ValueFromPipelineByPropertyName)]        
+        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Authprotocol can only be used when parameter Type is set to 'SNMPv3 agent'.")]
+        [AuthProtocol]$Snmpv3_Authprotocol,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Contextname can only be used when parameter Type is set to 'SNMPv3 agent'.")]
+        [string]$Snmpv3_Contextname,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Privpassphrase can only be used when parameter Type is set to 'SNMPv3 agent'.")]
+        [securestring]$Snmpv3_Privpassphrase,
+        [Parameter(ValueFromPipelineByPropertyName)]        
+        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Protocol can only be used when parameter Type is set to 'SNMPv3 agent'.")]
+        [PrivProtocol]$Snmpv3_PrivProtocol,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Securityname can only be used when parameter Type is set to 'SNMPv3 agent'.")]
+        [SecurityLevel]$Snmpv3_Securityname,
+        [Parameter(ValueFromPipelineByPropertyName)]
         [switch]$Unique,
-        [ValidateSet('DNS','IP')]
-        [string]$HostNameSource,
-        [ValidateSet('DNS','IP')]
-        [string]$VisibleNameSource,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [HostSource]$HostNameSource,
+        [Parameter(ValueFromPipeline)]
+        [VisibleNameSource]$VisibleNameSource,
         [string]$ProfileName
     )
 
@@ -381,7 +315,7 @@ function Set-ZabbixDiscoveryRule() {
     #     $authcode = Read-ZabbixConfig
     # }
 
-    $CheckTypes = @{
+<#     $CheckTypes = @{
         'SNMPv1 agent' = '10'
         'IMAP' = '7'
         'SNMPv2 agent' = '11'
@@ -398,14 +332,14 @@ function Set-ZabbixDiscoveryRule() {
         'HTTPS' = '14'
         'SSH' = '0'
         'SNMPv3 agent' = '13'
-    }
+    } 
     $PrivProtocols = @{
         AES128 = '1'
         AES192 = '2'
         AES256 = '3'
         AES192C = '4'
         AES256C = '5'
-    }
+    } 
     $SecurityLevels = @{
         noAuthNoPriv = '1'
         authNoPriv = '2'
@@ -418,31 +352,32 @@ function Set-ZabbixDiscoveryRule() {
         SHA384 = '4'
         SHA512 = '5'
     }
-
+    #>
 
     # $payload.method = "drule.update"
     # $payload.Add("auth", $authcode)
 
-    $Parameters = @{
-        method = 'drule.update'
-    }
+    Begin {
+        $Parameters = @{
+            method = 'drule.update'
+        }
 
-    if ($ProfileName) {
-        $Parameters.Add("ProfileName", $ProfileName)
-    }
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
 
-    $params = @{}
+        $params = @{}
 
-    if ($Type) {
-        $_type = $CheckTypes[$type]
-        $params.Add("type", $_type)
+        if ($Type) {
+            $_type = $CheckTypes[$type]
+            $params.Add("type", $_type)
+        }
+        if ($IpRange) {
+            $params.Add("iprange", $IpRange)
+        }
     }
-    if ($IpRange) {
-        $params.Add("iprange", $IpRange)
-    }
-    if ($Checks) {
-        $params.Add("dchecks", $Checks)
-    } else {
+    
+    Process {
         if ($Key) {
             $params.Add("Key_", $Key)
         }
@@ -452,24 +387,21 @@ function Set-ZabbixDiscoveryRule() {
         if ($Snmp_Community) {
             $params.Add("snmp_community", $Snmp_Community)
         }
-        if ($Snmpv3_Authpassphrase) {
-            $PassPhrase = ConvertFrom-SecureString -SecureString $Snmpv3_Authpassphrase -AsPlainText
+        if ($Snmpv3_Authpassphrase) {            
             $params.Add("snmpv3_authpassphrase", $PassPhrase)
         }
         if ($Snmpv3_Authprotocol) {
-            $Protocol = $AuthProtocols[$Snmpv3_Authprotocol]
-            $params.Add("snmpv3_authprotocol", $Protocol)
+            $params.Add("snmpv3_authprotocol", $AuthProtocol.value__)
         }
         if ($Snmpv3_Contextname) {
             $params.Add("snmpv3_contextname", $Snmpv3_Contextname)
         }
-        if ($Snmpv3_Privpassphrase) {
-            $PrivPassPhrase = ConvertFrom-SecureString -SecureString $Snmpv3_Privpassphrase -AsPlainText
+        if ($Snmpv3_Privpassphrase) {            
             $params.Add("snmpv3_privpassphrase", $PrivPassPhrase)
         }
         if ($Snmpv3_PrivProtocol) {
             $PrivProtocol = $PrivProtocols[$Snmpv3_PrivProtocol]
-            $params.Add("snmpv3_privprotocol", $PrivProtocol)
+            $params.Add("snmpv3_privprotocol", $PrivProtocol.value__)
         }
         if ($Snmpv3_Securitylevel) {
             $SecLevel = $SecurityLevels[$Snmpv3_Securitylevel]
@@ -482,26 +414,14 @@ function Set-ZabbixDiscoveryRule() {
             $params.Add("uniq", '1')
         }
         if ($HostNameSource) {
-            switch($HostNameSource) {
-                'DNS' {
-                    $params.Add("host_source", "1")
-                }
-                'IP' {
-                    $params.Add("host_source", "2")
-                }
-            }            
-        }
+                $params.Add("host_source", $HostNameSource.value__)                
+        }                    
         if ($VisibleNameSource) {
-            switch ($VisibleNameSource) {
-                'DNS' {
-                    $params.Add("name_source", "1")
-                }
-                'IP' {
-                    $params.Add("name_source", '2')
-                }                
-            }
+            $params.Add("name_source", $VisibleNameSource.value__)
         }
+    }
 
+    End{
         $Parameters.Add("params", $params)
 
         #$body = $payload | ConvertTo-JSON -Depth 10 -Compress
@@ -519,6 +439,7 @@ function Set-ZabbixDiscoveryRule() {
         }
     }
 }
+
 
 function Remove-ZabbixDiscoveryRule() {
     [CmdletBinding(SupportsShouldProcess = $true)]

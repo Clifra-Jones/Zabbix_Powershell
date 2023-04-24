@@ -191,25 +191,8 @@ function Add-ZabbixHostGroupMembers() {
             ValueFromPipelineByPropertyName = $true
         )]
         [string]$GroupId,
-        [ValidateScript(
-            {
-                if ((-not $_) -and (-not $Templates)) {
-                    throw "One or both of parameters HostIds and TeplateIds must be specified."
-                } else {
-                    $true
-                }
-            }
-        )]
         [string[]]$HostIds,
-        [ValidateScript(
-            {
-                if ((-not $_) -and (-not $HostIds)) {
-                    throw "One or both of parameters HostIds and TeplateIds must be specified."
-                } else {
-                    $true
-                }
-            }
-        )]
+        [ValidateScript({$_ -or $HostsIds}, ErrorMessage = "One or both of HostIds or TemplateIds must be specified." )]
         [string[]]$TemplateIds
     )
 
@@ -385,17 +368,140 @@ function Get-ZabbixHost() {
 
 function Add-ZabbixHost() {
     [CmdletBinding()]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [Alias('host')]
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
+        [Alias('host')]        
         [string]$HostName,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Name,
         [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Description,
         [Parameter(ValueFromPipelineByPropertyName)]
-        [InventoryMode]$inventory_mode
+        [InventoryModes]$Inventory_Mode = -1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [IpmiAuthTypes]$Ipmi_AuthType = -1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$IPMI_Password,
+        [IPMIPrivileges]$Ipmi_Privilege = 2,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Ipmi_Username,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Proxy_HostId,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [HostStatus]$Status = 0,
+        [Parameter(ValueFromPipelineByPropertyName)]        
+        [TlsConnections]$Tls_Connect = 1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [TlsConnections]$Tls_Accept = 1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Tls_Issuer,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Tls_Subject, 
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({(-not $_) -and ($Tls_Connect -eq 2 -or $Tls_Accept -eq 2)}, 
+            ErrorMessage = "Parameter 'Tls_Psk_Identity is required if Parameters 'Tls_Connect' is set to PSK (2).")]
+        [string]$Tls_Psk_Identity,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateScript({(-not $_) -and ($Tls_Connect -eq 2 -or $Tls_Accept -eq 2)}, 
+            ErrorMessage = "Parameter 'Tls_Psk is required if Parameters 'Tls_Connect' is set to PSK (2).")]
+        [string]$Tls_Psk,
+        [string]$ProfileName
     )
 
-    write-host $inventory_mode.value__
+    # Validate Parameters
+
+<#     If ($Tls_Connect -eq 2 -or $Tls_Accept -eq 2) {
+        If (-not $Tls_Psk_Identity) {
+            Write-Host "Add-ZabbixHost: Cannot validate argument on parameter 'Tls_Psk_Identity'. Parameter 'Tls_Psk_Identity is required if Parameters 'Tls_Connect' is set to PSK (2)." `
+                -ForegroundColor Red
+            exit
+        }
+        if (-not $Tls_Psk) {
+            Write-Host "Add-ZabbixHost: Cannot validate argument on parameter 'Tls_Psk'. Parameter 'Tls_Psk is required if Parameters 'Tls_Accept is set to PSK (2)." `
+                -ForegroundColor Red
+            exit
+        }
+    }
+ #>
+    $Parameters = @{
+        method = 'host.create'
+    }
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{
+        "Name" = $HostName
+    }
+
+    if ($Description) {
+        $params.Add("description", $Description)
+    }
+
+    if ($Inventory_Mode) {
+        $params.Add("inventory_mode", $Inventory_Mode)
+    }
+
+    if ($Ipmi_AuthType) {
+        $params.Add("ipmi_authtype", $Ipmi_AuthType)
+    }
+    
+    if ($IPMI_Password) {
+        $params.Add("ipmi_password", $IPMI_Password)
+    }
+
+    if ($Ipmi_Username) {
+        $params.Add("ipmi_username", $Ipmi_Username)
+    }
+
+    if ($Proxy_HostId) {
+        $params.Add("proxy_hostid", $Proxy_HostId)
+    }
+
+    if ($Status) {
+        $param.Add("status", $Status)
+    }
+
+    if ($Tls_Connect) {
+        $params.Add("tls_connect", $Tls_Connect)
+    }
+
+    if ($Tls_Accept) {
+        $params.Add("tls_accpt", $Tls_Accept)
+    }
+
+    if ($Tls_Issuer) {
+        $params.Add("tls_issuer", $Tls_Issuer)
+    }
+
+    if ($Tls_Subject) {
+        $params.Add("tls_subject", $tls_subject)
+    }
+
+    if ($Tls_Psk_Identity) {
+        $params.Add("tls_psk_identity", $Tls_Psk_Identity)
+    }
+
+    if ($Tls_Psk) {
+        $params.Add("tls_psk", $Tls_Psk)
+    }
+
+    $Parameters.Add("params", $params)
+
+    try {
+        $response = Invoke-ZabbixAPI @Parameters
+
+        If ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
 }
 
 function Get-HostInterface() {
@@ -455,7 +561,9 @@ function Get-HostInterface() {
         }
     }
 }
+#endregion
 
+#region Interfaces
 function Add-HostInterface() {
     [CmdletBinding()]
     Param(
@@ -541,6 +649,135 @@ function Add-HostInterface() {
         }
     }
 }
+
+function Set-ZabbixHost() {
+    [CmdletBinding()]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
+    Param(
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
+        [string]$HostId,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [Alias('host')]        
+        [string]$HostName,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Name,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Description,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [InventoryModes]$Inventory_Mode = -1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [IpmiAuthTypes]$Ipmi_AuthType = -1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$IPMI_Password,
+        [IPMIPrivileges]$Ipmi_Privilege = 2,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Ipmi_Username,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Proxy_HostId,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [HostStatus]$Status = 0,
+        [Parameter(ValueFromPipelineByPropertyName)]        
+        [TlsConnections]$Tls_Connect = 1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [TlsConnections]$Tls_Accept = 1,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Tls_Issuer,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [string]$Tls_Subject, 
+        [Parameter(
+            ParameterSetName = 'psk',
+            ValueFromPipelineByPropertyName
+        )]
+        [string]$Tls_Psk_Identity,
+        [Parameter(
+            ParameterSetName = 'psk',
+            ValueFromPipelineByPropertyName)]
+        [string]$Tls_Psk,
+        [string]$ProfileName
+    )
+
+    $Parameters = @{
+        method = 'host.update'
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    }
+
+    $params = @{
+        hostid = $HostId
+    }
+
+    if ($Description) {
+        $params.Add("description", $Description)
+    }
+
+    if ($Inventory_Mode) {
+        $params.Add("inventory_mode", $Inventory_Mode)
+    }
+
+    if ($Ipmi_AuthType) {
+        $params.Add("ipmi_authtype", $Ipmi_AuthType)
+    }
+    
+    if ($IPMI_Password) {
+        $params.Add("ipmi_password", $IPMI_Password)
+    }
+
+    if ($Ipmi_Username) {
+        $params.Add("ipmi_username", $Ipmi_Username)
+    }
+
+    if ($Proxy_HostId) {
+        $params.Add("proxy_hostid", $Proxy_HostId)
+    }
+
+    if ($Status) {
+        $param.Add("status", $Status)
+    }
+
+    if ($Tls_Connect) {
+        $params.Add("tls_connect", $Tls_Connect)
+    }
+
+    if ($Tls_Accept) {
+        $params.Add("tls_accpt", $Tls_Accept)
+    }
+
+    if ($Tls_Issuer) {
+        $params.Add("tls_issuer", $Tls_Issuer)
+    }
+
+    if ($Tls_Subject) {
+        $params.Add("tls_subject", $tls_subject)
+    }
+
+    if ($Tls_Psk_Identity) {
+        $params.Add("tls_psk_identity", $Tls_Psk_Identity)
+    }
+
+    if ($Tls_Psk) {
+        $params.Add("tls_psk", $Tls_Psk)
+    }
+
+    $Parameters.Add("params", $params)
+
+    try {
+        $response = Invoke-ZabbixAPI @Parameters
+
+        If ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+}
+
+
 
 function Set-HostInterface() {
     [CmdletBinding()]

@@ -21,11 +21,8 @@ function Get-Payload() {
 
 Set-Variable contentType -Option Constant -Value "application/json"
 
-enum InventoryMode {
-    Disabled = -1
-    Manual = 0
-    Automatic = 1
-}
+
+
 
 # private functions
 
