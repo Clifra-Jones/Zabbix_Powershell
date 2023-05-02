@@ -2,8 +2,7 @@
 function Get-ZabbixMediaType() {
     Param(
         [string]$MediaTypeId,
-        [ValidateSet('email','script','SMS','Webhook')]
-        [string]$Media,
+        [MediaType]$Media,
         [string]$UserId,
         [switch]$includeUsers,
         [switch]$includeMessageTemplates,
@@ -38,14 +37,7 @@ function Get-ZabbixMediaType() {
         $params.Add("mediatypeids", $MediaTypeId)
     }
     if ($Media) {
-        $media = @{
-            'email' = 0
-            'script' = 1
-            'SMS' = 2
-            'Webhook' = 4
-        }
-        $mediaIndex = $media[$Media]
-        $params.Add("mediaids", $MediaIndex)
+        $params.Add("mediaids", $Media.value__)
     }
     if ($UserId) {
         $params.Add("userids", $UserId)
@@ -96,33 +88,52 @@ function Set-ZabbixMediaType() {
         )]
         [int]$mediaTypeId,        
         [string]$name,
-        [ValidateSet('email','script','SMS','Webhook')]
-        [string]$Media,
+        [MediaType]$Media,
         [string]$execPath,
         [string]$gsmModem,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, ErrorMessage = "Parameter username can only be used when parameter Media is 'Email'")]
         [string]$username,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, ErrorMessage = "Parameter password can only be used when parameter Media is 'Email'")]
         [string]$passwd,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpEmail is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [string]$smtpEmail,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpHelo is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [string]$smtpHelo,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpServer is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [string]$smtpServer,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpPort is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [int]$smtpPort,
-        [ValidateSet('None','STARTTLS','SSL/TLS')]
-        [string]$smtpSecurity,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpSecurity can only be used when parameter Media is 'Email' and must be excluded for all other Media.")]
+        [SmtpSecurity]$smtpSecurity,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpVerifyHost can only be used when parameter Media is 'SSL' and must be excluded for all other Media.")]
         [switch]$smtpVerifyHost,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+        ErrorMessage = "Parameter smtpVerifyPeer can only be used when parameter Media is 'SSL' and must be excluded for all other Media.")]
         [switch]$smtpVerifyPeer,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpAuthentication can only be used when parameter Media is 'Email' and must be excluded for all other Media.")]
         [switch]$smtpAuthentication,
         [switch]$disable,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Script}, ErrorMessage = "Parameter execParams can onlyu be used when paraeter Medai is 'Script'")]
         [string]$execParams,
         [int]$maxSessions,
         [int]$maxAttempts,
         [string]$attemptInterval,
         [switch]$html,
+        [ValidateScript({$_ -and $type -eq [MediaType]::Webhooks}, ErrorMessage = "Parameter Script is only valid when parameter Media is 'Webhooks'")]
         [string]$script,
         [string]$timeout,
         [switch]$webhookTags,
         [switch]$showEventMenu,
         [string]$eventMenuUrl,
         [string]$eventMenuName,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Wenhooks}, ErrorMessage = "Parameter wenHooksParameters can only be used when parameter Media is 'Webhooks'")]
         [hashtable]$webhookParameters,
         [string]$description,
         [psobject]$messageTemplates,
@@ -157,20 +168,10 @@ function Set-ZabbixMediaType() {
     }
     
     if ($Media) {
-        $media = @{
-            'email' = 0
-            'script' = 1
-            'SMS' = 2
-            'Webhook' = 4
-        }
-        $mediaIndex = $media[$Media]
-        $params.Add("type", $MediaIndex)
+        $params.Add("type", $Media.Value__)
     }
 
     if ($execPath) {
-        if ($media -ne 'script') {
-            throw "Parameter execPath only valid for script media types!"
-        }
         $params.Add("name",$execPath) 
     }
     if ($gsmModem) { 
@@ -195,17 +196,7 @@ function Set-ZabbixMediaType() {
         $params.Add("smtp_port", $smtpPort) 
     }
     if ($smtpSecurity) {
-        switch ($smtpSecurity) {
-            "None" {
-                $payload.params.Add("smtp_security", 0)
-            }
-            "STARTTLS" {
-                $payload.params.Add("smtp_securoty", 1)
-            }
-            "SSL/TLS" {
-                $payload.params.Add("smtp_security", 2)
-            }
-        }
+        $payload.params.add("smtp_security", $smtpSecurity.Value__)
     }
     if ($smtpVerifyHost) {
         $params.Add("smtp_verifu_host", 1) 
@@ -235,21 +226,12 @@ function Set-ZabbixMediaType() {
         $params.Add("content_type", "1") 
     }
     if ($script) {
-        if ($media -ne "Webhook") {
-            throw "Parameter script only valid with media type Webhook"
-        }
         $params.Add("script", $script)
     }
     if ($timeout) {
-        if ($media -ne "Webhook") {
-            throw "Parameter timeout only valid with media type Webhook"
-        }
         $params.Add("timeout", $timeout) 
     }
     if ($webhookTags) {
-        if ($media -ne "Webhook") {
-            throw "Parameter webhookTags only valid with media type Webhook"
-        }
         $params.Add("process_tags", 1) 
     }
     if ($showEventMenu) {
@@ -356,36 +338,58 @@ function Set-ZabbixMediaType() {
 function Add-ZabbixMediaType() {
     [CmdletBinding()]
     Param(     
-        [Parameter(Mandatory = $true)]
+        [Parameter(
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true
+        )]
+        [int]$mediaTypeId,        
         [string]$name,
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('email','script','SMS','Webhook')]
-        [string]$Media,
+        [MediaType]$Media,
         [string]$execPath,
         [string]$gsmModem,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, ErrorMessage = "Parameter username can only be used when parameter Media is 'Email'")]
         [string]$username,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, ErrorMessage = "Parameter password can only be used when parameter Media is 'Email'")]
         [string]$passwd,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpEmail is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [string]$smtpEmail,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpHelo is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [string]$smtpHelo,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpServer is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [string]$smtpServer,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpPort is required when parameter Media is 'Email' and must be excluded for all other Media.")]
         [int]$smtpPort,
-        [ValidateSet('None','STARTTLS','SSL/TLS')]
-        [string]$smtpSecurity,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpSecurity can only be used when parameter Media is 'Email' and must be excluded for all other Media.")]
+        [SmtpSecurity]$smtpSecurity,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpVerifyHost can only be used when parameter Media is 'SSL' and must be excluded for all other Media.")]
         [switch]$smtpVerifyHost,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+        ErrorMessage = "Parameter smtpVerifyPeer can only be used when parameter Media is 'SSL' and must be excluded for all other Media.")]
         [switch]$smtpVerifyPeer,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Email}, 
+            ErrorMessage = "Parameter smtpAuthentication can only be used when parameter Media is 'Email' and must be excluded for all other Media.")]
         [switch]$smtpAuthentication,
         [switch]$disable,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Script}, ErrorMessage = "Parameter execParams can onlyu be used when paraeter Medai is 'Script'")]
         [string]$execParams,
         [int]$maxSessions,
         [int]$maxAttempts,
         [string]$attemptInterval,
         [switch]$html,
+        [ValidateScript({$_ -and $type -eq [MediaType]::Webhooks}, ErrorMessage = "Parameter Script is only valid when parameter Media is 'Webhooks'")]
         [string]$script,
         [string]$timeout,
         [switch]$webhookTags,
         [switch]$showEventMenu,
         [string]$eventMenuUrl,
         [string]$eventMenuName,
+        [ValidateScript({$_ -and $Media -eq [MediaType]::Wenhooks}, ErrorMessage = "Parameter wenHooksParameters can only be used when parameter Media is 'Webhooks'")]
         [hashtable]$webhookParameters,
         [string]$description,
         [psobject]$messageTemplates,
@@ -410,20 +414,10 @@ function Add-ZabbixMediaType() {
 
     $params.Add("name",$name) 
 
-    $media = @{
-        'email' = 0
-        'script' = 1
-        'SMS' = 2
-        'Webhook' = 4
-    }
-    $mediaIndex = $media[$Media]
-    $params.Add("type", $MediaIndex)
+    $params.Add("type", $Media.Value__)
 
 
     if ($execPath) {
-        if ($media -ne 'script') {
-            throw "Parameter execPath only valid for script media types!"
-        }
         $params.Add("name",$execPath) 
     }
     if ($gsmModem) { 
@@ -448,17 +442,7 @@ function Add-ZabbixMediaType() {
         $params.Add("smtp_port", $smtpPort) 
     }
     if ($smtpSecurity) {
-        switch ($smtpSecurity) {
-            "None" {
-                $payload.params.Add("smtp_security", 0)
-            }
-            "STARTTLS" {
-                $payload.params.Add("smtp_securoty", 1)
-            }
-            "SSL/TLS" {
-                $payload.params.Add("smtp_security", 2)
-            }
-        }
+        $payload.params.Add("smtp_security", $smtpSecurity.Value__)
     }
     if ($smtpVerifyHost) {
         $params.Add("smtp_verifu_host", 1) 
@@ -488,21 +472,12 @@ function Add-ZabbixMediaType() {
         $params.Add("content_type", "1") 
     }
     if ($script) {
-        if ($media -ne "Webhook") {
-            throw "Parameter script only valid with media type Webhook"
-        }
         $params.Add("script", $script)
     }
     if ($timeout) {
-        if ($media -ne "Webhook") {
-            throw "Parameter timeout only valid with media type Webhook"
-        }
         $params.Add("timeout", $timeout) 
     }
     if ($webhookTags) {
-        if ($media -ne "Webhook") {
-            throw "Parameter webhookTags only valid with media type Webhook"
-        }
         $params.Add("process_tags", 1) 
     }
     if ($showEventMenu) {

@@ -6,6 +6,7 @@ function Get-ZabbixUserGroup() {
         [string]$UserId,
         [switch]$IncludeUsers,
         [switch]$IncludeRights,
+        [switch]$IncludeTags,
         [string]$authcode
     )
 
@@ -29,7 +30,7 @@ function Get-ZabbixUserGroup() {
     $params = @{}
 
     if ($GroupId) {
-        $params.Add("groupids", $GroupId)
+        $params.Add("usrgrpids", $GroupId)
     }
     if ($UserId) {
         $params.Add("userIds", $UserId)
@@ -40,6 +41,9 @@ function Get-ZabbixUserGroup() {
     }
     if ($IncludeRights.IsPresent) {
         $params.Add("selectRights", "extend")
+    }
+    if ($IncludeTags.IsPresent) {
+        $param.Add("selectTagFilters", "extend")
     }
 
     $Parameters.Add("params", $params)
@@ -126,8 +130,7 @@ function Add-ZabbixUserGroup() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$Name,
-        [ValidateSet('default','Internal','LDAP','Disabled')]
-        [string]$FrontEndAccess = 'default',
+        [FrontendAccess]$FrontEndAccess = 'default',
         [switch]$Disabled,
         [switch]$DebugMode,
         [psobject]$Rights,
@@ -156,17 +159,7 @@ function Add-ZabbixUserGroup() {
 
     $params.Add("name", $Name)
 
-    switch ($FrontEndAccess) {
-        'Internal' {
-            $param.Add("gui_access", "1")
-        }
-        'LDAP' {
-            $params.Add("gui_access", "2")
-        }
-        'Disabled' {
-            $params.Add("gui_access", "3")
-        }
-    }
+    $params.Add("gui_access", $FrontEndAccess.value__)
 
     if ($Disabled.IsPresent) {
         $params.Add("userss.status", "1")
@@ -210,8 +203,7 @@ function Set-ZabbixUserGroup() {
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
         [string]$Name,
-        [ValidateSet('default','Internal','LDAP','Disabled')]
-        [string]$FrontEndAccess = 'default',
+        [FrontendAccess]$FrontEndAccess = 'default',
         [switch]$Disabled,
         [switch]$DebugMode,
         [psobject]$Rights,
@@ -245,17 +237,7 @@ function Set-ZabbixUserGroup() {
     }
 
     if ($FrontEndAccess) {
-        switch ($FrontEndAccess) {
-            'Internal' {
-                $param.Add("gui_access", "1")
-            }
-            'LDAP' {
-                $params.Add("gui_access", "2")
-            }
-            'Disabled' {
-                $params.Add("gui_access", "3")
-            }
-        }
+        $params.Add("gui_access", $FrontEndAccess.value__)
     }
 
     if ($Disabled.IsPresent) {
@@ -387,32 +369,68 @@ function Remove-ZabbixUserGroup() {
     }
 }
 
+Function Add-ZabbixUserGroupPermission() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
+        [string]$GroupId,
+        [Parameter(Mandatory)]
+        [string]$HostGroupid,
+        [Parameter(Mandatory)]
+        [HostAccessLevel]$Permission
+    )
+
+    $rights = (Get-ZabbixUserGroup -GroupId $GroupId -IncludeRights).rights
+    $right = @{
+        id = $HostGroupid
+        permission = $Permission.value__
+    }
+    $rights += $right
+
+    $Group = Set-ZabbixUserGroup -GroupId $GroupId -Rights $right
+
+    return $group    
+}
+
+function Add-ZabbixUserGroupTag() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
+        [string]$Groupid,
+        [Parameter(Mandatory)]
+        [string]$HostGroupId,
+        [Parameter(Mandatory)]
+        [string]$TagName,
+        [Parameter(Mandatory)]
+        [string]$TagValue
+    )
+
+    $Tags = (Get-ZabbixUserGroup -GroupId $Groupid -IncludeTags).tag_filters
+
+    $Tag = @{
+        groupid = $HostGroupId
+        tag = $TagName
+        value = $TagValue
+    }
+
+    $Tags += $tag
+
+    $Group = Set-ZabbixUserGroup -GroupId $Groupid -TagPermissions $Tags
+
+    return $Group
+}
+
 function Get-ZabbixUser() {
     [CmdletBinding()]
     Param(
-        [ValidateScript(
-            {
-                if ($_ -and $Username) {
-                    throw "Parameter UserId cannot ne used with parameter Username."
-                } elseif ($null -eq $_ -and $null -eq $UserId) {
-                    throw "One of either UserId parameter of Username Parameter must be used"
-                } else {
-                    $true
-                }
-            }
-        )]
         [string]$UserId,
-        [ValidateScript(
-            {
-                if ($_ -and $UserId) {
-                    throw "Parameter Username cannot be used with parameter UserId"
-                } elseif ($null -eq $_ -and $null -eq $UserId) {
-                    throw "One of either UserId parameter of Username Parameter must be used"
-                } else {
-                    $true
-                }
-            }
-        )]
+        [ValidateScript({$_ -and $UserId}, ErrorMessage = "Parameter Username cannot be used with parameter UserId.")]
         [string]$Username,
         [switch]$includeMedias,
         [switch]$IncludeMediaTypes,
@@ -490,20 +508,10 @@ function Add-ZabbixUser() {
         [Parameter(Mandatory = $true)]
         [Alias('Alias')]
         [string]$Username,
-        [ValidateScript(
-            {
-                if ($_ -and $env:ZABBIXVersion -eq "5") {
-                    throw "Parameter RoleId is only valid for Zabbix 6.0 and above."
-                } elseif (-not $_) {
-                    throw "Parameter RoleId is required with Zabbix 5.0"
-                } else {
-                    $true
-                }
-            }
-        )]
         [string]$RoleId,
         [string]$GivenName,
         [string]$Surname,
+        [Parameter(Mandatory)]
         [PSObject]$UserGroups,
         [PSObject]$Medias,
         [string]$ProfileName        
@@ -586,17 +594,6 @@ function Set-ZabbixUser() {
         )]        
         [string]$UserId,
         [string]$UserName,
-        [ValidateScript(
-            {
-                if ($_ -and $env:ZABBIXVersion -eq "5") {
-                    throw "Parameter RoleId is only valid for Zabbix 6.0 and above."
-                } elseif (-not $_) {
-                    throw "Parameter RoleId is required with Zabbix 5.0"
-                } else {
-                    $true
-                }
-            }
-        )]
         [string]$RoleId,
         [string]$Language,
         [string]$GivenName,
@@ -607,6 +604,8 @@ function Set-ZabbixUser() {
         [string]$Theme,
         [string]$Url,
         [string]$TimeZone,
+        [switch]$AutoLogon,
+        [string]$SessionLifeTime,
         [string]$ProfileName
     )
 
@@ -670,6 +669,14 @@ function Set-ZabbixUser() {
 
     if ($TimeZone) {
         $params.Add("timezone", $TimeZone)
+    }
+
+    if ($AutoLogon.IsPresent) {
+        $params.Add("autologin", 1)
+    }
+
+    if ($SessionLifeTime) {
+        $params.Add("autologout", $SessionLifeTime)
     }
 
     $Parameters.Add("Params", $params)

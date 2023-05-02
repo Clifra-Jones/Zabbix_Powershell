@@ -5,10 +5,11 @@ using namespace System.Management.Automation
 #$Uri = "https://zabbix.balfourbeattyus.com/api_jsonrpc.php"
 
 #$DefaultProfile = Read-ZabbixConfig 
-Set-Variable -Name "CurrentProfile" -Value (Read-ZabbixConfig) -Scope Script
+<# Set-Variable -Name "CurrentProfile" -Value (Read-ZabbixConfig) -Scope Script
 
 $configPath = "$home/.zabbix"
-$configFile = "$configPath/auth.json"
+$configFile = "$configPath/auth.json" #>
+
 function Get-Payload() { 
     return [ordered]@{
         jsonrpc = "2.0"
@@ -20,9 +21,6 @@ function Get-Payload() {
 }
 
 Set-Variable contentType -Option Constant -Value "application/json"
-
-
-
 
 # private functions
 

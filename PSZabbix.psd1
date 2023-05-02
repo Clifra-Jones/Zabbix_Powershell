@@ -57,7 +57,10 @@ Description = 'Powershell module to interact the the Zabbix API.'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-ScriptsToProcess = @('.\private\Enumerations.ps1')
+ScriptsToProcess = @(
+    './private/Enumerations.ps1',
+    './private/private.ps1'
+)
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()

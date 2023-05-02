@@ -189,7 +189,7 @@ function Set-ZabbixItem() {
                 ErrorMessage = "Parameter AuthType is only valid for SSHAGent and HTTPAgent Item types.")]
         [ItemAuthType]$AuthType,
         [string]$Description,
-        [ValidateScript({$_ -and $type -eq [ItemType]]::HTTPAgent}, ErrorMessage = "Parameter followRedirects is only valid for HTTPAgent Item type.")]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter followRedirects is only valid for HTTPAgent Item type.")]
         [switch]$followRedirects,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter httpHeaders is only valid for HTTPAgent Item type.")]
         [psobject]$httpHeaders,
@@ -521,7 +521,7 @@ function Add-ZabbixItem() {
                 ErrorMessage = "Parameter AuthType is only valid for SSHAGent and HTTPAgent Item types.")]
         [ItemAuthType]$AuthType,
         [string]$Description,
-        [ValidateScript({$_ -and $type -eq [ItemType]]::HTTPAgent}, ErrorMessage = "Parameter followRedirects is only valid for HTTPAgent Item type.")]
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter followRedirects is only valid for HTTPAgent Item type.")]
         [switch]$followRedirects,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter httpHeaders is only valid for HTTPAgent Item type.")]
         [psobject]$httpHeaders,

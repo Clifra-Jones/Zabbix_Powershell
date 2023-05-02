@@ -141,3 +141,29 @@ enum RetrieveMode {
     Headers = 1
     Both = 2
 }
+
+enum MediaType {
+    Email = 0
+    Script = 1
+    SMS = 2
+    Webhooks = 4
+}
+
+enum SmtpSecurity {
+    None = 0
+    STARTTLS = 1
+    SSL = 2
+}
+
+enum FrontendAccess {
+    Default = 0
+    Internal =  1
+    LDAP = 2
+    Disabled = 3
+}
+
+enum HostAccessLevel {
+    Denied = 0
+    ReadOnly = 1
+    ReadWrite = 2
+}
