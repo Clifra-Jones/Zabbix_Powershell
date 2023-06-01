@@ -2,21 +2,17 @@ function Get-ZabbixHistory() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory = $true,
-            ValueFromPipelineByPropertyName = $true,
-            ParameterSetName = "host"
+            ValueFromPipelineByPropertyName = $true
         )]
         [string]$hostId,
         [Parameter(
-            Mandatory = $true,
-            ValueFromPipelineByPropertyName = $true,
-            ParameterSetName = 'item'
+            ValueFromPipelineByPropertyName = $true
         )]
         [string]$itemid,
         [datetime]$startTime,
         [datetime]$endTime,
         [ValidateSet('float','character','log','numeric','text')]
-        [string]$historyType = 'numeric',
+        [string]$historyType,
         [int]$limit,
         [string]$ProfileName
     )
@@ -38,21 +34,23 @@ function Get-ZabbixHistory() {
 
         $params = @{}
 
-        switch ($historyType) {
-            'float' {
-                $payload.params.Add("history", 0)
-            }
-            'character' {
-                $payload.params.Add("history", 1)
-            }
-            'log' {
-                $payload.params.Add("history", 2)
-            }
-            'numeric' {
-                $payload.params.Add("history", 3)
-            }
-            'text' {
-                $payload.Param.Add("history", 4)
+        if ($historyType) {
+            switch ($historyType) {
+                'float' {
+                    $params.Add("history", 0)
+                }
+                'character' {
+                    $params.Add("history", 1)
+                }
+                'log' {
+                    $params.Add("history", 2)
+                }
+                'numeric' {
+                    $params.Add("history", 3)
+                }
+                'text' {
+                    $params.Add("history", 4)
+                }
             }
         }
 

@@ -606,6 +606,7 @@ function Set-ZabbixUser() {
         [string]$TimeZone,
         [switch]$AutoLogon,
         [string]$SessionLifeTime,
+        [psobject[]]$Medias,
         [string]$ProfileName
     )
 
@@ -677,6 +678,10 @@ function Set-ZabbixUser() {
 
     if ($SessionLifeTime) {
         $params.Add("autologout", $SessionLifeTime)
+    }
+
+    if ($Medias) {
+        $params.Add("medias", $Medias)
     }
 
     $Parameters.Add("Params", $params)
@@ -752,4 +757,54 @@ function Remove-ZabbixUser() {
     }
 
 
+}
+
+function Add-ZabbixUserMedia() {
+    [CmdletBinding()]
+    Param(
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
+        [string]$UserId,
+        [Parameter(Mandatory)]
+        [string]$MediaTypeId,
+        [Parameter(Mandatory)]
+        [switch]$Active,
+        [string[]]$SendTo,
+        [string[]]$Severities,
+        [string]$Period
+    )
+
+    $mediaType = Get-ZabbixMediaType -MediaTypeId $MediaTypeId
+
+    if ($Sendto -is [array] -and $MediaType.Type -ne [MediaType]::Email) {
+        throw "Parameter SendTo can only be an array with a Media Type of 'Email'"
+    }
+
+    $Medias = (Get-ZabbixUser -UserId -includeMedias).medias
+
+    $Media = @{
+        mediatypeId = $MediaTypeId
+        sendto = $SendTo
+    }
+
+    if ($Active.IsPresent) {
+        $Media.Add("active", 1)
+    }
+
+    if ($Severities) {
+        $Int_Severity = ConvertSeveritiesTo-Integer -Severities $Severities
+        $Media.Add("severity", $Int_Severity)
+    }
+
+    if ($Period) {
+        $Media.Add("period", $Period)
+    }
+
+    $Medias += $Media
+
+    $User = Set-ZabbixUser -UserId $UserId -Medias $Medias
+
+    return $User
 }
