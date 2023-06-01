@@ -297,6 +297,7 @@ function Get-ZabbixHost() {
     if ($templateid) {
         $params.Add("templateids", $templateid)
     }
+
     if ($excludeDisabled) {
         $params.Add("filter", @{
             status = 0

@@ -180,6 +180,7 @@ function Remove-ZabbixTemplate() {
         try {
             $response = Invoke-ZabbixAPI @Parameters
 
+
             if ($response.error) {
                 throw $response.error.data
             }

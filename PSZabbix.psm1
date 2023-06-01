@@ -52,8 +52,6 @@ function Read-ZabbixConfig() {
 . $PSScriptRoot/public/Discovery.ps1
 . $PSScriptRoot/public/Users.ps1
 
-
-
 function Invoke-ZabbixAPI() {
     Param(
         [Parameter(Mandatory = $true)]
