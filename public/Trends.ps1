@@ -8,35 +8,49 @@ function Get-ZabbixTrends() {
         [datetime]$StartDate,
         [datetime]$EndDate,
         [int]$limit,
-        [string]$authcode
+        [string]$ProfileName
     )
 
     Begin {
-        if (-not $authcode) {
-            $authcode = Read-ZabbixConfig
-        }
+        # if (-not $authcode) {
+        #     $authcode = Read-ZabbixConfig
+        # }
         
-        $payload = Get-Payload
-        $payload.method = 'trend.get'
+        # $payload = Get-Payload
+        # $payload.method = 'trend.get'
+        $Parameters = @{
+            method = 'trend.get'
+        }
+
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
+
+        $params = @{}
+
         if ($startTime) {
             $nixStartTime = ([System.DateTimeOffset]$startTime).ToUnixTimeSeconds()
-            $payload.params.Add("time_from", $nixStartTime)
+            $params.Add("time_from", $nixStartTime)
         }
         if ($endTime) {
             $nixEndTime = ([System.DateTimeOffset]$endTime).ToUnixTimeSeconds()
-            $payload.params.Add("time_till", $nixEndTime)
+            $params.Add("time_till", $nixEndTime)
         }
     }
 
     Process {
-        $payload.params.Add("itemids", @($itemId))
+        $params.Add("itemids", @($itemId))
 
-        $payload.Add("auth", $authcode)
+        #$payload.Add("auth", $authcode)
 
-        $body = $payload | ConvertTo-Json -Depth 10 -Compress
+        #$body = $payload | ConvertTo-Json -Depth 10 -Compress
+
+        $Parameters.Add("params", $params)
 
         try {
-            $response = Invoke-WebRequest -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-WebRequest -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+
             if ($response.error) {
                 throw $response.error.data
             }
@@ -56,8 +70,8 @@ function Get-ZabbixTrends() {
     Return only values that have been collected before or at the given date/time.
     .PARAMETER limit
     Limit the amount of retrieved objects.
-    .PARAMETER authcode
-    Authorization code to use for the API call. If omitted read the authcode from the local configuration file.
+    .PARAMETER ProfileName
+    The named profile to use.
     .OUTPUTS
     An array of trend objects.
     #>

@@ -57,7 +57,10 @@ Description = 'Powershell module to interact the the Zabbix API.'
 # RequiredAssemblies = @()
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-# ScriptsToProcess = @()
+ScriptsToProcess = @(
+    './private/Enumerations.ps1',
+    './private/private.ps1'
+)
 
 # Type files (.ps1xml) to be loaded when importing this module
 # TypesToProcess = @()
@@ -69,7 +72,47 @@ Description = 'Powershell module to interact the the Zabbix API.'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = '*'
+FunctionsToExport = @(
+    'Read-ZabbixConfig',
+    'Invoke-ZabbixAPI',
+    'Get-ZabbixUserGroup',
+    #'Import-UserGroups',
+    'Add-UserGroup',
+    'Set-UserGroup',
+    'Remove-ZabbixUserGroup',
+    'Get-ZabbixUser',
+    'Add-ZabbixUser',
+    'Set-ZabbixUser',
+    'Remove-ZabbixUser',
+    'Get-ZabbixTrends',
+    'Get-ZabbixTemplate',
+    'Add-ZabbixTemplate',
+    'Update-ZabbixTemplate',
+    'Remove-ZabbixTemplate',
+    'Get-ZabbixMediaType',
+    'Set-ZabbixMediaType',
+    'Add-ZabbixMediaType',
+    'Remove-ZabbixMediaType'
+    'Get-ZabbixItems',
+    'Set-ZabbixItem',
+    'Add-ZabbixItem',
+    'Remove-ZabbixItem',
+    'Get-ZabbixHostGroup',
+    'Get-ZabbixHost',
+    'Get-HostInterface',
+    'Add-HostInterface',
+    'Set-HostInterface',
+    'Get-ZabbixHistory',
+    'Get-ZabbixDiscoveryRule',
+    'Get-ZabbixDiscoveryRuleCheck',
+    'Add-ZabbixDiscoveryRule',
+    'Set-ZabbixDiscoveryRule',
+    'Remove-ZabbixDiscoveryRule'
+    'Get-ZabbixAuthCode',
+    'Remove-ZabbixAuthCode',
+    'Set-ZabbixProfile'
+    'Add-ZabbixHost'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
@@ -78,7 +121,10 @@ CmdletsToExport = '*'
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = '*'
+AliasesToExport = @(
+    'Connect-ZabbixUser',
+    'Disconnect-ZabbixUser'
+)
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

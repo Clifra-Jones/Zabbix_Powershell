@@ -2,74 +2,85 @@ function Get-ZabbixHistory() {
     [CmdletBinding()]
     Param(
         [Parameter(
-            Mandatory = $true,
-            ValueFromPipelineByPropertyName = $true,
-            ParameterSetName = "host"
+            ValueFromPipelineByPropertyName = $true
         )]
         [string]$hostId,
         [Parameter(
-            Mandatory = $true,
-            ValueFromPipelineByPropertyName = $true,
-            ParameterSetName = 'item'
+            ValueFromPipelineByPropertyName = $true
         )]
         [string]$itemid,
         [datetime]$startTime,
         [datetime]$endTime,
         [ValidateSet('float','character','log','numeric','text')]
-        [string]$historyType = 'numeric',
+        [string]$historyType,
         [int]$limit,
-        [string]$authCode
+        [string]$ProfileName
     )
 
     Begin {
-        if (-not $authCode) {
-            $authCode = Read-ZabbixConfig
+        # if (-not $authCode) {
+        #     $authCode = Read-ZabbixConfig
+        # }
+
+        # $payload = Get-Payload
+        # $payload.method = "history.get"
+        $Parameters = @{
+            method = 'history.get'
         }
 
-        $payload = Get-Payload
-        $payload.method = "history.get"
-        switch ($historyType) {
-            'float' {
-                $payload.params.Add("history", 0)
-            }
-            'character' {
-                $payload.params.Add("history", 1)
-            }
-            'log' {
-                $payload.params.Add("history", 2)
-            }
-            'numeric' {
-                $payload.params.Add("history", 3)
-            }
-            'text' {
-                $payload.Param.Add("history", 4)
+        if ($ProfileName) {
+            $Parameters.Add("ProfileName", $ProfileName)
+        }
+
+        $params = @{}
+
+        if ($historyType) {
+            switch ($historyType) {
+                'float' {
+                    $params.Add("history", 0)
+                }
+                'character' {
+                    $params.Add("history", 1)
+                }
+                'log' {
+                    $params.Add("history", 2)
+                }
+                'numeric' {
+                    $params.Add("history", 3)
+                }
+                'text' {
+                    $params.Add("history", 4)
+                }
             }
         }
 
-        $payload.params.Add("sortfield", "clock")
-        $payload.params.Add("sortorder", "DESC")
-        if ($limit) {$payload.params.Add("limit", $limit)}
+        $params.Add("sortfield", "clock")
+        $params.Add("sortorder", "DESC")
+        if ($limit) {$params.Add("limit", $limit)}
         
         if ($startTime) {
             $nixStartTime = ([System.DateTimeOffset]$startTime).ToUnixTimeSeconds()
-            $payload.params.Add("time_from", $nixStartTime)
+            $params.Add("time_from", $nixStartTime)
         }
         if ($endTime) {
             $nixEndTime = ([System.DateTimeOffset]$endTime).ToUnixTimeSeconds()
-            $payload.params.Add("time_till", $nixEndTime)
+            $params.Add("time_till", $nixEndTime)
         }
     }
 
     Process {
-        if ($hostId) {$payload.params.add("hostids", $hostId)}
-        if ($itemid) {$payload.params.Add("itemids", $itemid)}
+        if ($hostId) {$params.add("hostids", $hostId)}
+        if ($itemid) {$params.Add("itemids", $itemid)}
 
-        $payload.Add("auth", $authCode)
+        #$payload.Add("auth", $authCode)
 
-        $body = $payload | ConvertTo-Json -Compress
+        #$body = $payload | ConvertTo-Json -Compress
+        $Parameters.Add("params", $params)
 
         try {
-            $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+            $response = Invoke-ZabbixAPI @Parameters
+
             if ($response.error) {
                 throw $response.error.data
             }

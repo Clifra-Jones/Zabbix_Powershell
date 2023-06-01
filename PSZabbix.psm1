@@ -2,9 +2,14 @@
 using namespace System.Management.Automation
 
 # Private Variables
-$Uri = "https://zabbix.balfourbeattyus.com/api_jsonrpc.php"
+#$Uri = "https://zabbix.balfourbeattyus.com/api_jsonrpc.php"
+
+#$DefaultProfile = Read-ZabbixConfig 
+<# Set-Variable -Name "CurrentProfile" -Value (Read-ZabbixConfig) -Scope Script
+
 $configPath = "$home/.zabbix"
-$configFile = "$configPath/auth.json"
+$configFile = "$configPath/auth.json" #>
+
 function Get-Payload() { 
     return [ordered]@{
         jsonrpc = "2.0"
@@ -20,8 +25,21 @@ Set-Variable contentType -Option Constant -Value "application/json"
 # private functions
 
 function Read-ZabbixConfig() {    
-    $config = Get-Content $configFile | ConvertFrom-Json
-    return $config.authcode
+    Param(
+        [string]$ProfileName
+    )
+
+    If (-not $ProfileName) {
+        $ProfileName = 'default'
+    }
+
+    if (Test-Path $configFile) {
+        $config = Get-Content $configFile | ConvertFrom-Json
+    
+        return $config.$ProfileName
+    } else {
+        return $null
+    }
 }
 
 . $PSScriptRoot/public/Authorize.ps1
@@ -31,6 +49,8 @@ function Read-ZabbixConfig() {
 . $PSScriptRoot/public/History.ps1
 . $PSScriptRoot/public/Trends.ps1
 . $PSScriptRoot/public/Templates.ps1
+. $PSScriptRoot/public/Discovery.ps1
+. $PSScriptRoot/public/Users.ps1
 
 function Invoke-ZabbixAPI() {
     Param(
@@ -38,12 +58,16 @@ function Invoke-ZabbixAPI() {
         [string]$Method,
         [Parameter(Mandatory = $true)]
         [psobject]$params,
-        [string]$authcode
+        [string]$ProfileName
     )
 
-    if (-not $authcode) {
-        $authcode = Read-ZabbixConfig
+    if ($ProfileName) {
+        $AuthProfile = Read-ZabbixConfig $ProfileName
+    } else {
+        $AuthProfile = $CurrentProfile
     }
+
+    $Uri = $AuthProfile.Uri
 
     $payload = Get-Payload
 
@@ -51,17 +75,14 @@ function Invoke-ZabbixAPI() {
 
     $payload.params = $params
 
-    $payload.Add("auth", $authcode)
+    $payload.Add("auth", $AuthProfile.authcode)
 
     $body = $payload | ConvertTo-Json -Depth 10 -Compress
 
     try {
         $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
-        if ($response.error) {
-            throw $response.error.data
-        } else {
-            return $response
-        }
+        return $response
+
     } catch {
         throw $_
     }
@@ -105,3 +126,4 @@ function Invoke-ZabbixAPI() {
     $response = Invoke-ZabbixAPI -Method "host.get" -params $params    
     #>
 }
+
