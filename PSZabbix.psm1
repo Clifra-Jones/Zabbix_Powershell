@@ -42,6 +42,8 @@ function Read-ZabbixConfig() {
     }
 }
 
+$script:CurrentProfile = Read-ZabbixConfig
+
 . $PSScriptRoot/public/Authorize.ps1
 . $PSScriptRoot/public/MediaType.ps1
 . $PSScriptRoot/public/Hosts.ps1
