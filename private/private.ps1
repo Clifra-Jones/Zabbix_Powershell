@@ -1,8 +1,6 @@
 $configPath = "$home/.zabbix"
 $script:configFile = "$configPath/auth.json"
 
-Set-Variable -Name "CurrentProfile" -Value (Read-ZabbixConfig) -Scope Script
-
 function Convert-SeveritiesToInteger() {
     Param(
         [string[]]$Severities
