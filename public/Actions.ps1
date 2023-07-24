@@ -7,7 +7,9 @@ function Get-ZabbixAction() {
         [switch]$IncludeOperations,
         [switch]$IncludeRecoveryOperations,
         [switch]$IncludeAcknowledgeOperations,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -16,6 +18,13 @@ function Get-ZabbixAction() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -83,7 +92,9 @@ function Add-ZabbixAction() {
         [psObject[]]$Operations,
         [psobject[]]$Recovery_Operations,
         [psobject[]]$Acknowledge_Operation,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -93,6 +104,13 @@ function Add-ZabbixAction() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
         }
     }
 
@@ -155,7 +173,9 @@ function Remove-ZabbixAction() {
     Param(
         [Parameter(Mandatory)]
         [string]$Actionid,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [stirng]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -164,6 +184,13 @@ function Remove-ZabbixAction() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @(

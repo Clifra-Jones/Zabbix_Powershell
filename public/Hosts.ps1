@@ -8,7 +8,9 @@ function Get-ZabbixHostGroup() {
         [string]$hostId,
         [string]$groupId,
         [switch]$includeHosts,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -25,7 +27,14 @@ function Get-ZabbixHostGroup() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }   
 
         $params = @{}
 
@@ -80,7 +89,9 @@ function Add-ZabbixHostGroup() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$Name,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -89,6 +100,13 @@ function Add-ZabbixHostGroup() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{
@@ -116,7 +134,9 @@ function Set-ZabbixHostGroup() {
         [string]$GroupId,
         [Parameter(Mandatory = $true)]
         [string]$Name,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -125,6 +145,13 @@ function Set-ZabbixHostGroup() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{
@@ -150,7 +177,10 @@ function Remove-ZabbixHostGroup() {
     [CmdletBinding(SupportsShouldProcess)]
     Param(
         [Parameter(Mandatory = $true)]
-        [string]$GroupId
+        [string]$GroupId,
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -159,6 +189,13 @@ function Remove-ZabbixHostGroup() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @(
@@ -193,7 +230,10 @@ function Add-ZabbixHostGroupMembers() {
         [string]$GroupId,
         [string[]]$HostIds,
         [ValidateScript({$_ -or $HostsIds}, ErrorMessage = "One or both of HostIds or TemplateIds must be specified." )]
-        [string[]]$TemplateIds
+        [string[]]$TemplateIds,
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -268,7 +308,9 @@ function Get-ZabbixHost() {
         [switch]$includeInterfaces,
         [switch]$includeParentTemplates,
         [switch]$excludeDisabled,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # $authcode = Read-ZabbixConfig
@@ -281,6 +323,13 @@ function Get-ZabbixHost() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -410,7 +459,9 @@ function Add-ZabbixHost() {
         [ValidateScript({(-not $_) -and ($Tls_Connect -eq 2 -or $Tls_Accept -eq 2)}, 
             ErrorMessage = "Parameter 'Tls_Psk is required if Parameters 'Tls_Connect' is set to PSK (2).")]
         [string]$Tls_Psk,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # Validate Parameters
@@ -431,8 +482,16 @@ function Add-ZabbixHost() {
     $Parameters = @{
         method = 'host.create'
     }
+
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{
@@ -513,7 +572,9 @@ function Get-HostInterface() {
         )]
         [string]$hostId,
         [string]$InterfaceId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -529,7 +590,14 @@ function Get-HostInterface() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }    
 
         #$params.Add("output", "extend")
         #$payload.Add("auth", $authcode)
@@ -581,7 +649,9 @@ function Add-HostInterface() {
         [string]$IPAddress,
         [string]$dnsName,
         [int]$port=10050,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -598,7 +668,14 @@ function Add-HostInterface() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }    
     }
 
     Process {
@@ -697,7 +774,9 @@ function Set-ZabbixHost() {
             ParameterSetName = 'psk',
             ValueFromPipelineByPropertyName)]
         [string]$Tls_Psk,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -706,6 +785,13 @@ function Set-ZabbixHost() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{
@@ -795,7 +881,9 @@ function Set-HostInterface() {
         [string]$IPAddress,
         [string]$dnsName,
         [int]$port=10050,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -813,7 +901,14 @@ function Set-HostInterface() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }    
     }
 
     Process{

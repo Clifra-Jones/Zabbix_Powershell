@@ -7,7 +7,9 @@ function Get-ZabbixUserGroup() {
         [switch]$IncludeUsers,
         [switch]$IncludeRights,
         [switch]$IncludeTags,
-        [string]$authcode
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -21,11 +23,19 @@ function Get-ZabbixUserGroup() {
     # $payload.Add("auth", $authcode)
 
     $Parameters = @{}
-    if ($profilename) {
-        $Parameters.Add("ProfileName", $profilename)
-    }
 
     $Parameters.Add("method", "usergroup.get")
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }
 
     $params = @{}
 
@@ -71,7 +81,9 @@ function Import-UserGroups() {
             ValueFromPipeline = $true
         )]
         [psObject]$UserGroup,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -91,7 +103,15 @@ function Import-UserGroups() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
         }
+    
     }
 
     Process {
@@ -136,7 +156,9 @@ function Add-ZabbixUserGroup() {
         [psobject]$Rights,
         [psobject]$Users,
         [psobject]$TagPermissions,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -153,6 +175,13 @@ function Add-ZabbixUserGroup() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -209,7 +238,9 @@ function Set-ZabbixUserGroup() {
         [psobject]$Rights,
         [psobject]$Users,
         [psobject]$TagPermissions,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -228,6 +259,13 @@ function Set-ZabbixUserGroup() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -283,7 +321,9 @@ function Add-ZabbixUserGroupMembers() {
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
         [string[]]$Members,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -292,6 +332,13 @@ function Add-ZabbixUserGroupMembers() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{
@@ -329,7 +376,9 @@ function Remove-ZabbixUserGroup() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -342,6 +391,17 @@ function Remove-ZabbixUserGroup() {
 
     $Parameters = @{
         method = 'usergroup.delete'
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
     
     $params = @($GroupId)
@@ -380,17 +440,33 @@ Function Add-ZabbixUserGroupPermission() {
         [Parameter(Mandatory)]
         [string]$HostGroupid,
         [Parameter(Mandatory)]
-        [HostAccessLevel]$Permission
+        [HostAccessLevel]$Permission,
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
-    $rights = (Get-ZabbixUserGroup -GroupId $GroupId -IncludeRights).rights
+    $Parameters = @{}
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }
+
+    $rights = (Get-ZabbixUserGroup -GroupId $GroupId -IncludeRights @Parameters).rights
     $right = @{
         id = $HostGroupid
         permission = $Permission.value__
     }
     $rights += $right
 
-    $Group = Set-ZabbixUserGroup -GroupId $GroupId -Rights $right
+    $Group = Set-ZabbixUserGroup -GroupId $GroupId -Rights $right @Parameters
 
     return $group    
 }
@@ -408,10 +484,25 @@ function Add-ZabbixUserGroupTag() {
         [Parameter(Mandatory)]
         [string]$TagName,
         [Parameter(Mandatory)]
-        [string]$TagValue
+        [string]$TagValue,
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
-    $Tags = (Get-ZabbixUserGroup -GroupId $Groupid -IncludeTags).tag_filters
+    $Parameters = @{}
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }
+
+    $Tags = (Get-ZabbixUserGroup -GroupId $Groupid -IncludeTags @Parameters).tag_filters
 
     $Tag = @{
         groupid = $HostGroupId
@@ -421,7 +512,7 @@ function Add-ZabbixUserGroupTag() {
 
     $Tags += $tag
 
-    $Group = Set-ZabbixUserGroup -GroupId $Groupid -TagPermissions $Tags
+    $Group = Set-ZabbixUserGroup -GroupId $Groupid -TagPermissions $Tags @Parameters
 
     return $Group
 }
@@ -435,7 +526,9 @@ function Get-ZabbixUser() {
         [switch]$includeMedias,
         [switch]$IncludeMediaTypes,
         [switch]$IncludeUserGroups,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     #if (-not $authcode) {
@@ -448,13 +541,20 @@ function Get-ZabbixUser() {
 
     #$payload.Add("auth", $authcode)
 
-    $Parameters = @{}
+    $Parameters = @{
+        method = "user.get"
+    }
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
-
-    $Parameters.Add("Method", "user.get")
 
     $params = @{}
     if ($UserId) {
@@ -514,7 +614,9 @@ function Add-ZabbixUser() {
         [Parameter(Mandatory)]
         [PSObject]$UserGroups,
         [PSObject]$Medias,
-        [string]$ProfileName        
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -533,6 +635,13 @@ function Add-ZabbixUser() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -607,7 +716,9 @@ function Set-ZabbixUser() {
         [switch]$AutoLogon,
         [string]$SessionLifeTime,
         [psobject[]]$Medias,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -624,8 +735,15 @@ function Set-ZabbixUser() {
         method = 'user,update'
     }
 
-    if ($profilename) {
-        $Parameters.Add("ProfileName", $profilename)
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -705,7 +823,9 @@ function Remove-ZabbixUser() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$UserId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -723,6 +843,13 @@ function Remove-ZabbixUser() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -773,16 +900,31 @@ function Add-ZabbixUserMedia() {
         [switch]$Active,
         [string[]]$SendTo,
         [string[]]$Severities,
-        [string]$Period
+        [string]$Period,
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
-    $mediaType = Get-ZabbixMediaType -MediaTypeId $MediaTypeId
+    $Parameters = @{}
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }
+
+    $mediaType = Get-ZabbixMediaType -MediaTypeId $MediaTypeId @Parameters
 
     if ($Sendto -is [array] -and $MediaType.Type -ne [MediaType]::Email) {
         throw "Parameter SendTo can only be an array with a Media Type of 'Email'"
     }
 
-    $Medias = (Get-ZabbixUser -UserId -includeMedias).medias
+    $Medias = (Get-ZabbixUser -UserId -includeMedias @Parameters).medias
 
     $Media = @{
         mediatypeId = $MediaTypeId
@@ -804,7 +946,7 @@ function Add-ZabbixUserMedia() {
 
     $Medias += $Media
 
-    $User = Set-ZabbixUser -UserId $UserId -Medias $Medias
+    $User = Set-ZabbixUser -UserId $UserId -Medias $Medias @Parameters
 
     return $User
 }

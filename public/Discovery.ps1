@@ -3,7 +3,9 @@ function Get-ZabbixDiscoveryRule() {
     Param(
         [string]$DRuleId,
         [switch]$IncludeChecks,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -22,6 +24,13 @@ function Get-ZabbixDiscoveryRule() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -63,7 +72,9 @@ function Get-ZabbixDiscoveryRuleCheck() {
             ValueFromPipelineByPropertyName = $true
         )]
         [string]$druleid,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -110,7 +121,14 @@ function Get-ZabbixDiscoveryRuleCheck() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }    
     }
 
     Process {
@@ -155,7 +173,9 @@ function Add-ZabbixDiscoveryRule() {
         [string]$ProxyHostId,
         [switch]$Disabled,
         [psobject]$Checks,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AUthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -172,6 +192,13 @@ function Add-ZabbixDiscoveryRule() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $Params = @{}
@@ -308,7 +335,9 @@ function Set-ZabbixDiscoveryRule() {
         [HostSource]$HostNameSource,
         [Parameter(ValueFromPipeline)]
         [VisibleNameSource]$VisibleNameSource,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -364,7 +393,14 @@ function Set-ZabbixDiscoveryRule() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }   
 
         $params = @{}
 
@@ -446,7 +482,9 @@ function Remove-ZabbixDiscoveryRule() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$DRuleId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -463,6 +501,13 @@ function Remove-ZabbixDiscoveryRule() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
