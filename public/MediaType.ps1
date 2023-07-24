@@ -2,6 +2,7 @@
 function Get-ZabbixMediaType() {
     Param(
         [string]$MediaTypeId,
+        [Alias('Type')]
         [MediaType]$Media,
         [string]$UserId,
         [switch]$includeUsers,
@@ -97,6 +98,7 @@ function Set-ZabbixMediaType() {
         )]
         [int]$mediaTypeId,        
         [string]$name,
+        [Alias('Type')]
         [MediaType]$Media,
         [string]$execPath,
         [string]$gsmModem,
@@ -362,6 +364,7 @@ function Add-ZabbixMediaType() {
         )]
         [int]$mediaTypeId,        
         [string]$name,
+        [Alias('Type')]
         [MediaType]$Media,
         [string]$execPath,
         [string]$gsmModem,
