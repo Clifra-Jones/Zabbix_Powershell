@@ -12,7 +12,9 @@ function Get-ZabbixItems() {
         [switch]$searchWildcardsEnabled,
         [switch]$searchFromStart,
         [switch]$NoProgress,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
 
@@ -26,7 +28,14 @@ function Get-ZabbixItems() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
-    }                
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }               
 
     # $payload = Get-Payload
     # $payload.method = 'item.get'
@@ -242,7 +251,9 @@ function Set-ZabbixItem() {
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyPeer,
         [switch]$NoProgress,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
 
@@ -259,6 +270,13 @@ function Set-ZabbixItem() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -574,7 +592,9 @@ function Add-ZabbixItem() {
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyPeer,
         [switch]$NoProgress,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -582,7 +602,14 @@ function Add-ZabbixItem() {
     }
 
     if ($ProfileName) {
-        $Parameters.Add("ProfikeName", $ProfileName)
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
     
     $params = @{}
@@ -787,7 +814,9 @@ function Remove-ZabbixItem() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$ItemId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -796,6 +825,13 @@ function Remove-ZabbixItem() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{

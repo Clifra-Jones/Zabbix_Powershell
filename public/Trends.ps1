@@ -8,7 +8,9 @@ function Get-ZabbixTrends() {
         [datetime]$StartDate,
         [datetime]$EndDate,
         [int]$limit,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -24,8 +26,15 @@ function Get-ZabbixTrends() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
         }
-
+    
         $params = @{}
 
         if ($startTime) {

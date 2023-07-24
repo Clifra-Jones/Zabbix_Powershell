@@ -6,7 +6,9 @@ function Get-ZabbixMediaType() {
         [string]$UserId,
         [switch]$includeUsers,
         [switch]$includeMessageTemplates,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     # if (-not $authcode) {
@@ -23,6 +25,13 @@ function Get-ZabbixMediaType() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -137,7 +146,9 @@ function Set-ZabbixMediaType() {
         [hashtable]$webhookParameters,
         [string]$description,
         [psobject]$messageTemplates,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
     # if (-not $authcode) {
     #     $authcode = Read-ZabbixConfig
@@ -153,6 +164,13 @@ function Set-ZabbixMediaType() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -393,7 +411,9 @@ function Add-ZabbixMediaType() {
         [hashtable]$webhookParameters,
         [string]$description,
         [psobject]$messageTemplates,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -402,6 +422,13 @@ function Add-ZabbixMediaType() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -582,7 +609,9 @@ function Remove-ZabbixMediaType() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$MediaTypeId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{

@@ -10,7 +10,9 @@ function Get-ZabbixTemplate() {
             ValueFromPipelineByPropertyName = $true
         )]
         [string]$GroupId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -27,7 +29,14 @@ function Get-ZabbixTemplate() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }    
     }
 
     Process {
@@ -67,7 +76,9 @@ function Add-ZabbixTemplate() {
         [string]$Name,
         [string]$VisibleName,
         [string]$Description,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -76,6 +87,13 @@ function Add-ZabbixTemplate() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{
@@ -112,7 +130,9 @@ function Update-ZabbixTemplate() {
         [string]$Name,
         [string]$VisibleName,
         [string]$Description,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -121,6 +141,13 @@ function Update-ZabbixTemplate() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $params = @{}
@@ -157,7 +184,9 @@ function Remove-ZabbixTemplate() {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$TemplateId,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     $Parameters = @{
@@ -166,6 +195,13 @@ function Remove-ZabbixTemplate() {
 
     if ($ProfileName) {
         $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
     }
 
     $Params = @(

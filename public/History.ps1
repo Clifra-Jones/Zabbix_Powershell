@@ -14,7 +14,9 @@ function Get-ZabbixHistory() {
         [ValidateSet('float','character','log','numeric','text')]
         [string]$historyType,
         [int]$limit,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     Begin {
@@ -30,7 +32,14 @@ function Get-ZabbixHistory() {
 
         if ($ProfileName) {
             $Parameters.Add("ProfileName", $ProfileName)
-        }
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }   
 
         $params = @{}
 

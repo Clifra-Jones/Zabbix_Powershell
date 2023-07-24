@@ -60,13 +60,30 @@ function Invoke-ZabbixAPI() {
         [string]$Method,
         [Parameter(Mandatory = $true)]
         [psobject]$params,
-        [string]$ProfileName
+        [string]$ProfileName,
+        [string]$AuthCode,
+        [string]$Uri
     )
 
     if ($ProfileName) {
         $AuthProfile = Read-ZabbixConfig $ProfileName
     } else {
-        $AuthProfile = $CurrentProfile
+        if ($AuthCode) {
+            if ($Uri) {
+                $AuthProfile = @{
+                    Uri = $Uri
+                    authcode = $AuthCode
+                }
+            } else {
+                Throw "Uri is required when providing an AuthCode"
+            }
+        } else {
+            $AuthProfile = $CurrentProfile
+        }
+    }
+
+    if (-not $AuthProfile) {
+        Throw "Authentication not provided. Please check your default profile or provide a profile name, or Authcode and URL."
     }
 
     $Uri = $AuthProfile.Uri
