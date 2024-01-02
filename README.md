@@ -1,10 +1,8 @@
-![Balfour Logo](https://www.balfourbeattyus.com/Balfour-dev.allata.com/media/content-media/2017-Balfour-Beatty-Logo-Blue.svg?ext=.svg)
-
-### Zabbix API Powershell Module
+# Zabbix API Powershell Module
 
 Copyright 2022, Balfour Beatty US.
 
-License: [GPL 3](https://www.gnu.org/licenses/gpl-3.0.en.html)
+License: [Microsoft Public License](https://opensource.org/license/ms-pl-html)
 
 Project Site: [PSZabbix](https://github.com/Clifra-Jones/PSZabbix)
 

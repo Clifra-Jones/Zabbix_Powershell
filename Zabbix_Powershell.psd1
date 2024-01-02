@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = './PSZabbix.psm1'
+RootModule = './Zabbix_Powershell.psm1'
 
 # Version number of this module.
 ModuleVersion = '1.0.0'
@@ -30,7 +30,7 @@ CompanyName = 'Balfour Beatty US'
 Copyright = '(c) Cliff Williams. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Powershell module to interact the the Zabbix API.'
+Description = 'Powershell module to interact the the Zabbix API. (See project site for more details)'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -141,10 +141,10 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        # Tags = @()
+        Tags = @('Zabbix')
 
         # A URL to the license for this module.
-        LicenseUri = 'https://www.gnu.org/licenses/gpl-3.0.en.html'
+        LicenseUri = 'https://opensource.org/license/ms-pl-html'
 
         # A URL to the main website for this project.
         ProjectUri = 'https://github.com/Clifra-Jones/PSZabbix'
