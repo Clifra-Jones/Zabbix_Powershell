@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = './PSZabbix.psm1'
+RootModule = './Zabbix_Powershell.psm1'
 
 # Version number of this module.
 ModuleVersion = '1.0.0'
