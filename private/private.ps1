@@ -1,46 +1,34 @@
 $configPath = "$home/.zabbix"
 $script:configFile = "$configPath/auth.json"
 
-function Convert-SeveritiesToInteger() {
+function Convert-SeverityToInteger() {
     Param(
-        [string[]]$Severities
+        [string]$Severity
     )
     $binary = ""
 
-    if ($Severities -contains "NotClassified") {
-        $binary += "1"
-    } else {
-        $binary += '0'
-    }
+    if ($SeveritY -eq "NotClassified") {
+        $binary += "000001"
+    } 
     
-    if ($Severities -contains "Information") {
-        $binary += "1"
-    } else {
-        $binary += '0'
+    if ($Severities -eq "Information") {
+        $binary += "000011"
+    } 
+
+    if ($Severities -eq "Warning") {
+        $binary += "000111"
     }
 
-    if ($Severities -contains "Warning") {
-        $binary += "1"
-    } else {
-        $binary += '0'
-    }
-
-    if ($Severities -contains "Average") {
-        $binary += "1"
-    } else {
-        $binary += '0'
+    if ($Severities -eq "Average") {
+        $binary += "001111"
     }
 
     if ($Severities -contains "High") {
-        $binary += "1"
-    } else {
-        $binary += '0'
-    }
+        $binary += "011111"
+    } 
 
     if ($Severities -contains "Disaster") {
-        $binary += "1"
-    } else {
-        $binary += '0'
+        $binary += "111111"
     }
 
     $IntegerSeverity = [Convert]::ToINt32($binary, 2)
@@ -48,3 +36,4 @@ function Convert-SeveritiesToInteger() {
     return $IntegerSeverity
 
 }
+

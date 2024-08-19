@@ -4,28 +4,28 @@ function Get-ZabbixAuthCode() {
     Param(        
         [string]$Uri,
         [string]$Username,
-        [securestring]$Password,
+        [SecureString]$Password,
         [string]$ProfileName,
         [switch]$StoreToProfile
     )
 
-    [Automation.pscredential] $zabbixCreds
+    [Automation.PsCredential] $zabbixCreds
     if (-not $Username) {
         $zabbixCreds = Get-Credential
     } elseIf (-not $Password) {
             $zabbixCreds = Get-Credential -UserName $Username
     } else {
-            $zabbixCreds = [Automation.pscredential]::new($Username, $Password)
+            $zabbixCreds = [Automation.PsCredential]::new($Username, $Password)
     } 
 
     $Username = $zabbixCreds.UserName
-    $Passwd = ConvertFrom-SecureString -SecureString $zabbixcreds.Password -AsPlainText
+    $Passwd = ConvertFrom-SecureString -SecureString $zabbixCreds.Password -AsPlainText
 
     $payload = Get-Payload
 
     $payload.method = "user.login"
     $payload.params = @{
-        user = $UserName
+        username = $UserName
         password = $Passwd
     }
 

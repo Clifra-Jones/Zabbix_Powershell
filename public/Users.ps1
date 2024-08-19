@@ -1,26 +1,18 @@
 using namespace System.Generic.Collections
 function Get-ZabbixUserGroup() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [string]$GroupId,
-        [string]$UserId,
         [switch]$IncludeUsers,
         [switch]$IncludeRights,
         [switch]$IncludeTags,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
-
-    # $payload = Get-Payload
-
-    # $payload.method = "usergroup.get"
-
-    # $payload.Add("auth", $authcode)
 
     $Parameters = @{}
 
@@ -41,9 +33,6 @@ function Get-ZabbixUserGroup() {
 
     if ($GroupId) {
         $params.Add("usrgrpids", $GroupId)
-    }
-    if ($UserId) {
-        $params.Add("userIds", $UserId)
     }
 
     if ($IncludeUsers.IsPresent) {
@@ -71,6 +60,31 @@ function Get-ZabbixUserGroup() {
     } catch {
         throw $_
     }
+
+    <#
+    .SYNOPSIS
+    Retrieve Zabbix User Groups
+    .DESCRIPTION
+    Retrieve Zabbix User Groups
+    .PARAMETER GroupId
+    The ID of the group
+    .PARAMETER IncludeUsers
+    Return the users from the user group in the users property.
+    .PARAMETER IncludeRights
+    Return user group rights in the rights property. It has the following properties: permission - (integer) access level to the host group; id - (string) ID of the host group.
+    .PARAMETER IncludeTags
+    Return user group tag based permissions in the tag_filters property. It has the following properties: groupid - (string) ID of the host group; tag - (string) tag name; value - (string) tag value.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    .OUTPUTS
+    An array of trend objects.
+
+
+    #>
 }
 
 function Import-UserGroups() {
@@ -146,18 +160,21 @@ function Import-UserGroups() {
 }
 
 function Add-ZabbixUserGroup() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$Name,
         [FrontendAccess]$FrontEndAccess = 'default',
         [switch]$Disabled,
         [switch]$DebugMode,
-        [psobject]$Rights,
-        [psobject]$Users,
-        [psobject]$TagPermissions,
+        [psobject[]]$Rights,
+        [psobject[]]$Users,
+        [psobject[]]$Tag,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]        
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -191,7 +208,7 @@ function Add-ZabbixUserGroup() {
     $params.Add("gui_access", $FrontEndAccess.value__)
 
     if ($Disabled.IsPresent) {
-        $params.Add("userss.status", "1")
+        $params.Add("users_status", "1")
     }
 
     if ($DebugMode.IsPresent) {
@@ -206,8 +223,8 @@ function Add-ZabbixUserGroup() {
         $params.Add("users", $Users) 
     }
 
-    if ($TagPermissions) {
-        $params.Add("tag_filters", $TagPermissions)
+    if ($Tag) {
+        $params.Add("tag_filters", $Tag)
     }
 
     #$body = $payload | ConvertTo-Json -Depth 5 -Compress
@@ -224,10 +241,42 @@ function Add-ZabbixUserGroup() {
     } catch {
         throw $_
     }
+
+    <#
+    .SYNOPSIS
+    Creates a user group.
+    .DESCRIPTION
+    Creates a new Users Group.
+    .PARAMETER Name
+    The name of the group
+    .PARAMETER FrontEndAccess
+    Frontend authentication method of the users in the group. 
+    Possible values: 
+    0 - (default) use the system default authentication method;
+    1 - use internal authentication;
+    2 - use LDAP authentication;
+    3 - disable access to the frontend.
+    .PARAMETER Disabled
+    Create the group disabled.
+    .PARAMETER DebugMode
+    Create the group with debug mode enabled.
+    .PARAMETER Rights
+    An array of user rights objects
+    .PARAMETER Users
+    An array of user objects. Must define the userid property
+    .PARAMETER Tag
+    an array of Tag based permissions to assign to the group.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Set-ZabbixUserGroup() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
@@ -235,11 +284,14 @@ function Set-ZabbixUserGroup() {
         [FrontendAccess]$FrontEndAccess = 'default',
         [switch]$Disabled,
         [switch]$DebugMode,
-        [psobject]$Rights,
-        [psobject]$Users,
-        [psobject]$TagPermissions,
+        [psobject[]]$Rights,
+        [psobject[]]$Users,
+        [psobject[]]$Tags,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -294,8 +346,8 @@ function Set-ZabbixUserGroup() {
         $params.Add("users", $Users)
     }
 
-    if ($TagPermissions) {
-        $params.Add("tag_filters", $TagPermissions)
+    if ($Tags) {
+        $params.Add("tag_filters", $Tags)
     }
 
     #$body = $payload | ConvertTo-Json -Depth 5 -Compress
@@ -313,16 +365,49 @@ function Set-ZabbixUserGroup() {
     } catch {
         throw $_
     }
+    <#
+    .SYNOPSIS
+    Updates a Users Groups.
+    .DESCRIPTION
+    Update Zabbix users group.
+    .PARAMETER GroupId
+    The Group ID to update.
+    .PARAMETER Name
+    The name of the group.
+    .PARAMETER FrontEndAccess
+    Frontend authentication method of the users in the group.
+    Possible values:
+    0 - (default) use the system default authentication method;
+    1 - use internal authentication;
+    2 - use LDAP authentication;
+    3 - disable access to the frontend.
+    .PARAMETER Disabled
+    Disable the group
+    .PARAMETER DebugMode
+    Set the group to debug mode
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    .OUTPUTS
+    An array of trend objects.
+
+    #>
 }
 
 function Add-ZabbixUserGroupMembers() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
         [string[]]$Members,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -369,25 +454,118 @@ function Add-ZabbixUserGroupMembers() {
     $params.Add(
         "userIds", ($users.ToArray())
     )
+
+    $Parameters.Add("params", $params)
+
+    try {
+        #$response = Invoke-RestMethod -Method POST -URI $Uri -ContentType $contentType -Body $body
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.error.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+    <#
+    .SYNOPSIS
+    Add members ro a group
+    .DESCRIPTION
+    Add the specified users to a Zabbix Users Group
+    .PARAMETER GroupId
+    ID of the group.
+    .PARAMETER Members
+    An array of user objects. Objects must define the userid property.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)    #>
+}
+
+function Get-ZabbixUsersGroupMembership() {
+    [CmdletBinding(DefaultParameterSetName = 'default')]
+    Param(
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]$UserId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
+        [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
+        [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
+        [string]$Uri        
+    )
+
+    Begin {
+        $Parameters = @{
+            method = "usergroup.get"
+        }
+
+        if ($ProfileName) {
+           $Parameters.Add("ProfileName", $ProfileName)
+        } elseif ($AuthCode) {
+            if ($Uri) {
+                $Parameters.Add("AuthCode", $AuthCode)
+                $Parameters.Add("Uri", $Uri)
+            } else {
+                throw "Uri is required when providing an AuthCode."
+            }
+        }
+    }
+
+    Process {
+        $params = @{
+            userids = @($UserId)
+        }
+
+        $Parameters.Add("params", $params)
+
+        try {
+            $response = Invoke-ZabbixAPI @Parameters
+
+            if ($response.error) {
+                throw $response.error.data
+            }
+            return $response.result
+        } catch {
+            throw $_
+        }
+    }
+    <#
+    .SYNOPSIS
+    Return a users group membership.
+    .DESCRIPTION
+    Return the group membership for the given user.
+    .PARAMETER UserId
+    The User Id.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)    
+    .OUTPUTS
+    An array of trend objects.
+    
+    #>
 }
 
 function Remove-ZabbixUserGroup() {
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
-
-    # $payload = Get-Payload
-
-    # $payload.method = 'usergroup.delete'
 
     $Parameters = @{
         method = 'usergroup.delete'
@@ -427,10 +605,24 @@ function Remove-ZabbixUserGroup() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Remove a Users Group
+    .DESCRIPTION
+    Remove the given users group.
+    .PARAMETER GroupId
+    The ID of the group.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 Function Add-ZabbixUserGroupPermission() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory,
@@ -441,8 +633,11 @@ Function Add-ZabbixUserGroupPermission() {
         [string]$HostGroupid,
         [Parameter(Mandatory)]
         [HostAccessLevel]$Permission,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -469,10 +664,34 @@ Function Add-ZabbixUserGroupPermission() {
     $Group = Set-ZabbixUserGroup -GroupId $GroupId -Rights $right @Parameters
 
     return $group    
+
+    <#
+    .SYNOPSIS
+    Adds a User group permission
+    .DESCRIPTION
+    Add a permission to the permissions collection for this group.
+    .PARAMETER GroupId
+    The group Id.
+    .PARAMETER HostGroupid
+    The ID of the host group to add the permissions to.
+    .PARAMETER Permission
+    Access level to the host group.
+
+    Possible values:
+    0 - access denied;
+    2 - read-only access;
+    3 - read-write access.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Add-ZabbixUserGroupTag() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory,
@@ -485,8 +704,11 @@ function Add-ZabbixUserGroupTag() {
         [string]$TagName,
         [Parameter(Mandatory)]
         [string]$TagValue,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -515,31 +737,50 @@ function Add-ZabbixUserGroupTag() {
     $Group = Set-ZabbixUserGroup -GroupId $Groupid -TagPermissions $Tags @Parameters
 
     return $Group
+
+    <#
+    .SYNOPSIS
+    Add tag based permissions.
+    .DESCRIPTION 
+    Add tag based permissions to a group.
+    .PARAMETER Groupid
+    The group id.
+    .PARAMETER HostGroupId
+    ID of the host group to add permission to.
+    .PARAMETER TagName
+    The tag name
+    .PARAMETER TagValue
+    The tag value
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)    
+    #>
+
+
 }
 
 function Get-ZabbixUser() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
+        [Parameter(Mandatory, ParameterSetName = 'userid')]
         [string]$UserId,
-        [ValidateScript({$_ -and $UserId}, ErrorMessage = "Parameter Username cannot be used with parameter UserId.")]
+        [Parameter(Mandatory, ParameterSetName = 'username')]
         [string]$Username,
         [switch]$includeMedias,
         [switch]$IncludeMediaTypes,
         [switch]$IncludeUserGroups,
+        [ValidateScript({$env:ZABBIXVersion -gt 5}, ErrorMessage = "IncludeRoles can only be used with Zabbix 6 and above.")]
+        [switch]$IncludeRoles,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    #if (-not $authcode) {
-    #    $authcode = Read-ZabbixConfig
-    #}
-
-    #$payload = Get-Payload
-
-    #$payload.method = 'user.get'
-
-    #$payload.Add("auth", $authcode)
 
     $Parameters = @{
         method = "user.get"
@@ -585,6 +826,9 @@ function Get-ZabbixUser() {
     if ($IncludeUserGroups) {
         $params.Add("selectUsrgrps", "extend") 
     }
+    if ($IncludeRoles) {
+        $params.Add("selectRoles", "extend")        
+    }
 
     $Parameters.Add("params", $params)
 
@@ -600,10 +844,32 @@ function Get-ZabbixUser() {
     } catch {
         throw $_
     }
+    <#
+    .DESCRIPTION
+    Retrieve a Zabbix user.
+    .PARAMETER UserId
+    The user Id. If omitted retrieve all users. (Cannot be used with username)
+    .PARAMETER Username
+    The username. if omitted retrieve all users. (Cannot be used with userid)
+    .PARAMETER includeMedias
+    Return media used by the user in the medias property.
+    .PARAMETER IncludeMediaTypes
+    Return media types used by the user in the mediatypes property.
+    .PARAMETER IncludeUserGroups
+    Return user groups that the user belongs to in the usrgrps property.
+    .PARAMETER IncludeRoles
+    Return user role in the role property.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Add-ZabbixUser() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [Alias('Alias')]
@@ -611,23 +877,25 @@ function Add-ZabbixUser() {
         [string]$RoleId,
         [string]$GivenName,
         [string]$Surname,
+        [switch]$AutoLogon,
+        [string]$AutoLogout,
+        [string]$Language,
+        [string]$Refresh,
+        [int]$RowsPerPage,
+        [ValidateSet('default','blue','dark')]
+        [string]$Theme,
+        [string]$Url,
+        [string]$timezone,
         [Parameter(Mandatory)]
-        [PSObject]$UserGroups,
-        [PSObject]$Medias,
+        [PSObject[]]$UserGroups,
+        [PSObject[]]$Medias,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
-
-    # $payload = Get-Payload
-    
-    # $payload.method = "user.create"
-    
-    # $payload.Add("auth", $authcode)
 
     $Parameters = @{
         method = 'user.create'
@@ -664,6 +932,38 @@ function Add-ZabbixUser() {
         $params.Add("surname", $Surname)
     }
 
+    if ($AutoLogon) {
+        $params.Add("autologon", 1)
+    }
+
+    if ($AutoLogout) {
+        $params.Add("autologout", $AutoLogout)
+    }
+
+    if($Language) {
+        $params.Add("lang", $Language)
+    }
+
+    if ($Refresh) {
+        $params.Add("refresh", $Refresh)
+    }
+
+    If ($RowsPerPage) {
+        $params.Add("rows_per_page", $RowsPerPage)
+    }
+
+    if ($Theme) {
+        $params.Add("theme", $Theme)
+    }
+
+    if ($Url) {
+        $params.Add("url", $Url)
+    }
+
+    if ($timezone) {
+        $params.Add("timezone", $timezone)
+    }
+
     If ($UserGroups) {
         $params.Add("usrgrps", $UserGroups)
     }
@@ -691,10 +991,50 @@ function Add-ZabbixUser() {
     } catch {
         throw $_
     }
+
+    <#
+    .DESCRIPTION
+    Create a new Zabbix User.
+    .PARAMETER Username
+    The users name.
+    .PARAMETER RoleId
+    Role Id for this user
+    .PARAMETER GivenName
+    The users given name
+    .PARAMETER Surname
+    The users surname.
+    .PARAMETER AutoLogon
+    Set the user to auto logon
+    .PARAMETER AutoLogout
+    The time interval for auto logout.
+    .PARAMETER Language
+    The users language. If omitted the system default is used.
+    .PARAMETER Refresh
+    The refresh interval. Default is 30 seconds.
+    .PARAMETER RowsPerPage
+    Amount of object rows to show per page.
+    .PARAMETER Theme
+    The users theme. 
+    .PARAMETER Url
+    URL of the page to redirect the user to after logging in.
+    .PARAMETER timezone
+    User's time zone, for example, Europe/London, UTC.
+    .PARAMETER UserGroups
+    An array of user groups object. Object must define the usrgrpid property
+    .PARAMETER Medias
+    An array if user media to be created
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    
+    #>
 }
 
 function Set-ZabbixUser() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory = $true,
@@ -716,20 +1056,13 @@ function Set-ZabbixUser() {
         [switch]$AutoLogon,
         [string]$SessionLifeTime,
         [psobject[]]$Medias,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
-
-    # $payload = Get-Payload
-
-    # $payload.method = 'user.update'
-
-    # $payload.Add("auth", $authcode)
 
     $Parameters = @{
         method = 'user,update'
@@ -816,26 +1149,60 @@ function Set-ZabbixUser() {
     } catch {
         throw $_
     }
+    <#
+    .DESCRIPTION
+    Update a Zabbix User.
+    .PARAMETER UserId
+    The ID of the user
+    .PARAMETER Username
+    The users name.
+    .PARAMETER RoleId
+    Role Id for this user
+    .PARAMETER GivenName
+    The users given name
+    .PARAMETER Surname
+    The users surname.
+    .PARAMETER AutoLogon
+    Set the user to auto logon
+    .PARAMETER AutoLogout
+    The time interval for auto logout.
+    .PARAMETER Language
+    The users language. If omitted the system default is used.
+    .PARAMETER Refresh
+    The refresh interval. Default is 30 seconds.
+    .PARAMETER RowsPerPage
+    Amount of object rows to show per page.
+    .PARAMETER Theme
+    The users theme. 
+    .PARAMETER Url
+    URL of the page to redirect the user to after logging in.
+    .PARAMETER timezone
+    User's time zone, for example, Europe/London, UTC.
+    .PARAMETER UserGroups
+    An array of user groups object. Object must define the usrgrpid property
+    .PARAMETER Medias
+    An array if user media to be created
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Remove-ZabbixUser() {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$UserId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
-
-    # $payload = Get-Payload
-
-    # $payload.method = 'user.delete'
-    # $payload.Add("auth", $authcode)
 
     $Parameters = @{
         method = 'user.delete'
@@ -883,11 +1250,22 @@ function Remove-ZabbixUser() {
         }
     }
 
-
+    <#
+    .DESCRIPTION
+    Remove a Zabbix user.
+    .PARAMETER UserId
+    The users Id.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)    
+    #>
 }
 
 function Add-ZabbixUserMedia() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory,
@@ -899,10 +1277,14 @@ function Add-ZabbixUserMedia() {
         [Parameter(Mandatory)]
         [switch]$Active,
         [string[]]$SendTo,
-        [string[]]$Severities,
+        [ValidateSet('NotClassified','Information','Warning','Average','High','Disaster')]
+        [string]$Severity,
         [string]$Period,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -924,7 +1306,7 @@ function Add-ZabbixUserMedia() {
         throw "Parameter SendTo can only be an array with a Media Type of 'Email'"
     }
 
-    $Medias = (Get-ZabbixUser -UserId -includeMedias @Parameters).medias
+    $Medias = (Get-ZabbixUser -UserId $UserId -includeMedias).medias
 
     $Media = @{
         mediatypeId = $MediaTypeId
@@ -936,7 +1318,7 @@ function Add-ZabbixUserMedia() {
     }
 
     if ($Severities) {
-        $Int_Severity = ConvertSeveritiesTo-Integer -Severities $Severities
+        $Int_Severity = ConvertSeverityTo-Integer -Severity $Severity
         $Media.Add("severity", $Int_Severity)
     }
 
@@ -949,4 +1331,28 @@ function Add-ZabbixUserMedia() {
     $User = Set-ZabbixUser -UserId $UserId -Medias $Medias @Parameters
 
     return $User
+
+    <#
+    .DESCRIPTION
+    Add media to a Zabbix User
+    .PARAMETER UserId
+    The User Id.
+    .PARAMETER MediaTypeId
+    ID of the media type used by the media.
+    .PARAMETER Active
+    Set the media to active.
+    .PARAMETER SendTo
+    Address, user name or other identifier of the recipient.
+    If type of Media type is e-mail, values are represented as array. For other types of Media types, value is represented as a string.
+    .PARAMETER Severity
+    Highest severity to alert on.
+    .PARAMETER Period
+    Time when the notifications can be sent as a time period or user macros separated by a semicolon. Default: 1-7,00:00-24:00
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }

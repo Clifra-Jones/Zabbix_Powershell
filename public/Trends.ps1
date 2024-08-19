@@ -1,5 +1,5 @@
 function Get-ZabbixTrends() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             ValueFromPipelineByPropertyName = $true
@@ -8,8 +8,11 @@ function Get-ZabbixTrends() {
         [datetime]$StartDate,
         [datetime]$EndDate,
         [int]$limit,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -81,6 +84,10 @@ function Get-ZabbixTrends() {
     Limit the amount of retrieved objects.
     .PARAMETER ProfileName
     The named profile to use.
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
     .OUTPUTS
     An array of trend objects.
     #>

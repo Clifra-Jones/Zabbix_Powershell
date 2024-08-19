@@ -1,14 +1,17 @@
 function Get-ZabbixAction() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(ValueFromPipelineByPropertyName)]
-        [String]$Actionid,
+        [String]$ActionId,
         [switch]$IncludeFilter,
         [switch]$IncludeOperations,
         [switch]$IncludeRecoveryOperations,
         [switch]$IncludeAcknowledgeOperations,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -29,8 +32,8 @@ function Get-ZabbixAction() {
 
     $params = @{}
 
-    if ($Actionid) {
-        $params.Add("ActionIds", $Actionid)
+    if ($ActionId) {
+        $params.Add("ActionIds", $ActionId)
     }
 
     if ($IncludeFilter) {
@@ -61,10 +64,33 @@ function Get-ZabbixAction() {
     } catch {
         throw
     }
+    <#
+    .SYNOPSIS 
+    Retrieve Action(s).
+    .DESCRIPTION
+    Retrieve the Action(s) from the Zabbix server configuration.
+    .PARAMETER ActionId
+    The Id of the action to retrieve. If omitted all Actions are retrieved
+    .PARAMETER IncludeFilter
+    Include Filters in the output.
+    .PARAMETER IncludeOperations
+    Include Operations in the output.
+    .PARAMETER IncludeRecoveryOperations
+    Include Recovery Operations in the output.
+    .PARAMETER IncludeAcknowledgeOperations
+    Include Acknowledge Operations in the output.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+
+    #>
 }
 
 function Add-ZabbixAction() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory,
@@ -75,7 +101,7 @@ function Add-ZabbixAction() {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [Alias("ExcelationPeriod")]
+        [Alias("EscalationPeriod")]
         [string]$Esc_Period,
         [Parameter(
             Mandatory,
@@ -91,9 +117,12 @@ function Add-ZabbixAction() {
         [psObject]$Filter,
         [psObject[]]$Operations,
         [psobject[]]$Recovery_Operations,
-        [psobject[]]$Acknowledge_Operation,
+        [psobject[]]$Update_Operation,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -150,7 +179,7 @@ function Add-ZabbixAction() {
         }
 
         if ($Acknowledge_Operation) {
-            $params.Add("acknowledge_operations", $Acknowledge_Operation)
+            $params.Add("update_operations", $Update_Operation)
         }
 
         $Parameters.Add("params", $params)
@@ -166,15 +195,49 @@ function Add-ZabbixAction() {
             throw $_
         }
     }
+
+    <#
+    .SYNOPSIS
+    Add a Zabbix Action
+    .DESCRIPTION
+    Add an Action to the Zabbix configuration.
+    .PARAMETER Name
+    The Name of the Action.
+    .PARAMETER Esc_Period
+    The escalation period.
+    .PARAMETER EventSource
+    The Event Source.
+    .PARAMETER Disabled
+    Create the Action as disabled.
+    .PARAMETER Pause_Suppressed
+    Set escalation to paused.
+    .PARAMETER Filter
+    A Filter object for this Action.
+    .PARAMETER Operations
+    An Operations object for this action
+    .PARAMETER Recovery_Operations
+    A Recovery Operations object for this action.
+    .PARAMETER Update_Operation
+    An Update Operation object for this action.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Remove-ZabbixAction() {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory)]
-        [string]$Actionid,
+        [string]$ActionId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
-        [stirng]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
+        [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -199,7 +262,7 @@ function Remove-ZabbixAction() {
 
     $Parameters.Add("params", $params)
 
-    $Action = Get-ZabbixAction -Actionid $Actionid
+    $Action = Get-ZabbixAction -Actionid $ActionId
 
     if ($PSCmdlet.ShouldProcess("Delete", "Action: $($Action.Name)") ) {
         try {
@@ -213,4 +276,18 @@ function Remove-ZabbixAction() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Remove a Zabbix Action
+    .DESCRIPTION
+    Remove the specified action from the Zabbix configuration.
+    .PARAMETER ActionId
+    The ID of the action to be removed.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }

@@ -85,7 +85,7 @@ enum VisibleNameSource {
     IP = 2
 }
 
-enum ItemsType {
+enum ItemType {
     ZabbixAgent = 0
     ZabbixTrapper = 2
     SimpleCheck = 3
