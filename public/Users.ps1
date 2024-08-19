@@ -775,7 +775,7 @@ function Get-ZabbixUser() {
         [ValidateScript({$env:ZABBIXVersion -gt 5}, ErrorMessage = "IncludeRoles can only be used with Zabbix 6 and above.")]
         [switch]$IncludeRoles,
         [Parameter(Mandatory, ParameterSetName = 'profile')]
-        [string]$ProfileName = ,
+        [string]$ProfileName,
         [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
         [Parameter(Mandatory, ParameterSetName = 'authcode')]
