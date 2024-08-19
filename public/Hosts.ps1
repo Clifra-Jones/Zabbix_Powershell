@@ -8,7 +8,7 @@ function Get-ZabbixHostGroup() {
         [string]$GroupId,
         [switch]$IncludeHosts,
         [Parameter(Mandatory, ParameterSetName = 'profile')]
-        [string]$ProfileName = 'default',
+        [string]$ProfileName,
         [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
         [Parameter(Mandatory, ParameterSetName = 'authcode')]

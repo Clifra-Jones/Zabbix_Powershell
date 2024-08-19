@@ -103,7 +103,7 @@ function Get-ZabbixAuthCode() {
     .OUTPUTS
     The authorization token as a string.
     .NOTES
-    This command As the alias Connect-ZabbixUse. Eventually the Get-ZabbixAuthcode command will be depreciated 
+    This command has the alias Connect-ZabbixUser. Eventually the Get-ZabbixAuthcode command will be depreciated 
     in favor of Connect-ZabbixUser.
 
     The authcode will remain active until you log out with the Disconnect-ZabbixUser function (alias: Remove-ZabbixAuthCode)
