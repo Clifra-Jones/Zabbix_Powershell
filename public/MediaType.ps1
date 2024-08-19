@@ -1,5 +1,6 @@
 # Media Types
 function Get-ZabbixMediaType() {
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [string]$MediaTypeId,
         [Alias('Type')]
@@ -7,18 +8,13 @@ function Get-ZabbixMediaType() {
         [string]$UserId,
         [switch]$includeUsers,
         [switch]$includeMessageTemplates,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
-
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
-    
-    # $payload = Get-Payload
-
-    # $payload.method = "mediatype.get"
 
     $Parameters = @{
         method= 'mediatype.get'
@@ -53,10 +49,6 @@ function Get-ZabbixMediaType() {
         $params.Add("userids", $UserId)
     }
 
-    #$payload.Add("auth", $authcode)
-
-    #$body = $payload | ConvertTo-Json 
-
     $Parameters.Add("params", $params)
 
     try {
@@ -84,13 +76,19 @@ function Get-ZabbixMediaType() {
     Return a users property with the users that use the media type.
     .PARAMETER includeMessageTemplates
     Return a message_templates property with an array of media type messages.
+     .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
     .OUTPUTS
     An array of media Type objects.
     #>
 }
 
 function Set-ZabbixMediaType() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory = $true,
@@ -148,8 +146,11 @@ function Set-ZabbixMediaType() {
         [hashtable]$webhookParameters,
         [string]$description,
         [psobject]$messageTemplates,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
     # if (-not $authcode) {
@@ -356,7 +357,7 @@ function Set-ZabbixMediaType() {
     #>
 }
 function Add-ZabbixMediaType() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(     
         [Parameter(
             Mandatory = $true,
@@ -414,8 +415,11 @@ function Add-ZabbixMediaType() {
         [hashtable]$webhookParameters,
         [string]$description,
         [psobject]$messageTemplates,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -603,17 +607,31 @@ function Add-ZabbixMediaType() {
     .PARAMETER messageTemplates
     An array of message template properties.
     .PARAMETER ProfileName
-    The named profile to use.
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+
     #>
 }
 
 function Remove-ZabbixMediaType() {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$MediaTypeId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -653,6 +671,10 @@ function Remove-ZabbixMediaType() {
     .PARAMETER MediaTypeId
     The Id of the Media Type to delete.
     .PARAMETER ProfileName
-    The named profile to use.
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)        
     #>
 }

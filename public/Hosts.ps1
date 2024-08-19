@@ -1,26 +1,21 @@
 using namespace System.Collections.Generic
 
-#region HostGroups
 function Get-ZabbixHostGroup() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(ValueFromPipelineByPropertyName = $True)]
-        [string]$hostId,
-        [string]$groupId,
-        [switch]$includeHosts,
+        [string]$HostId,
+        [string]$GroupId,
+        [switch]$IncludeHosts,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
     Begin {
-        # if (-not $authcode) {
-        #     $authcode = Read-ZabbixConfig
-        # }
-        # #$inputType = ""
-        # $payload = Get-Payload
-        # $payload.method = 'hostgroup.get'
-
         $Parameters = @{
             method = 'hostgroup.get'
         }
@@ -85,12 +80,15 @@ function Get-ZabbixHostGroup() {
 }
 
 function Add-ZabbixHostGroup() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$Name,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -125,17 +123,35 @@ function Add-ZabbixHostGroup() {
     } catch {
         throw $_
     }
+
+    <#
+    .SYNOPSIS 
+    Add a host group.
+    .DESCRIPTION
+    Add a new zabbix host group.
+    .PARAMETER Name
+    The name of the group
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Set-ZabbixHostGroup() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
         [Parameter(Mandatory = $true)]
         [string]$Name,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -171,15 +187,34 @@ function Set-ZabbixHostGroup() {
     } catch {
         throw $_
     }
+    <#
+    .SYNOPSIS 
+    Update a host group
+    .DESCRIPTION
+    Update the properties of a host group.
+    .PARAMETER GroupId
+    ID of the host group.
+    .PARAMETER Name
+    Name of the host group.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Remove-ZabbixHostGroup() {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$GroupId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -218,22 +253,43 @@ function Remove-ZabbixHostGroup() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Remove a host group.
+    .DESCRIPTION
+    Remove the specified host group.
+    .PARAMETER GroupId
+    ID of the host group.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Add-ZabbixHostGroupMembers() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory = $true,
             ValueFromPipelineByPropertyName = $true
         )]
         [string]$GroupId,
+        [Parameter(Mandatory, ParameterSetName = 'hosts')]
+        [Parameter(Mandatory, ParameterSetName = 'both')]
         [string[]]$HostIds,
-        [ValidateScript({$_ -or $HostsIds}, ErrorMessage = "One or both of HostIds or TemplateIds must be specified." )]
+        [Parameter(Mandatory, ParameterSetName = 'templates')]
+        [Parameter(Mandatory, ParameterSetName = 'both')]
         [string[]]$TemplateIds,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
+
     )
 
     $Parameters = @{
@@ -291,12 +347,32 @@ function Add-ZabbixHostGroupMembers() {
     } catch {
         throw $_
     }
+    <#
+    .SYNOPSIS
+    Add Host group members.
+    .DESCRIPTION
+    Add hosts or templates to a Zabbix host group.
+    .PARAMETER GroupId
+    The ID of the group.
+    .PARAMETER HostIds
+    An array of host IDs to add to the group.
+    .PARAMETER TemplateIds
+    An array of template IDs to add to the group.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
-#endregion
 
-#region Hosts
 function Get-ZabbixHost() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(   
         [string]$HostId,
         [string]$HostName,
@@ -308,8 +384,11 @@ function Get-ZabbixHost() {
         [switch]$includeInterfaces,
         [switch]$includeParentTemplates,
         [switch]$excludeDisabled,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -412,12 +491,16 @@ function Get-ZabbixHost() {
     .PARAMETER excludeDisabled
     Exclude disabled hosts.
     .PARAMETER ProfileName
-    The name of rhe saved profile to use.
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
     #>
 }
 
 function Add-ZabbixHost() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
         [Parameter(
@@ -430,7 +513,7 @@ function Add-ZabbixHost() {
         [string]$Name,
         [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Description,
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName)]        
         [InventoryModes]$Inventory_Mode = -1,
         [Parameter(ValueFromPipelineByPropertyName)]
         [IpmiAuthTypes]$Ipmi_AuthType = -1,
@@ -459,26 +542,14 @@ function Add-ZabbixHost() {
         [ValidateScript({(-not $_) -and ($Tls_Connect -eq 2 -or $Tls_Accept -eq 2)}, 
             ErrorMessage = "Parameter 'Tls_Psk is required if Parameters 'Tls_Connect' is set to PSK (2).")]
         [string]$Tls_Psk,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
-    # Validate Parameters
-
-<#     If ($Tls_Connect -eq 2 -or $Tls_Accept -eq 2) {
-        If (-not $Tls_Psk_Identity) {
-            Write-Host "Add-ZabbixHost: Cannot validate argument on parameter 'Tls_Psk_Identity'. Parameter 'Tls_Psk_Identity is required if Parameters 'Tls_Connect' is set to PSK (2)." `
-                -ForegroundColor Red
-            exit
-        }
-        if (-not $Tls_Psk) {
-            Write-Host "Add-ZabbixHost: Cannot validate argument on parameter 'Tls_Psk'. Parameter 'Tls_Psk is required if Parameters 'Tls_Accept is set to PSK (2)." `
-                -ForegroundColor Red
-            exit
-        }
-    }
- #>
     $Parameters = @{
         method = 'host.create'
     }
@@ -562,18 +633,67 @@ function Add-ZabbixHost() {
     } catch {
         throw $_
     }
+
+    <#
+    .SYNOPSIS
+    Add a host.
+    .DESCRIPTION
+    Add a Zabbix host to the configuration.
+    .PARAMETER HostName
+    The name of the host
+    .PARAMETER Name
+    The display name of the host
+    .PARAMETER Description
+    A description of the host
+    .PARAMETER Inventory_Mode
+    Host inventory population mode.
+    .PARAMETER Ipmi_AuthType
+    IPMI authentication algorithm.
+    .PARAMETER IPMI_Password
+    IPMI password.
+    .PARAMETER Ipmi_Privilege
+    IPMI privilege level.
+    .PARAMETER Ipmi_Username
+    IPMI username.
+    .PARAMETER Proxy_HostId
+    ID of the proxy that is used to monitor the host.
+    .PARAMETER Status
+    Status and function of the host.(0 = monitored host (enabled), 1 = unmonitored host (disabled))
+    .PARAMETER Tls_Connect
+    TLS connection to host
+    .PARAMETER Tls_Accept
+    TLS Connection from host.
+    .PARAMETER Tls_Issuer
+    Certificate issuer.
+    .PARAMETER Tls_Subject
+    Certificate subject.
+    .PARAMETER Tls_Psk_Identity
+    PSK identity. Required if either tls_connect or tls_accept has PSK enabled.
+    Do not put sensitive information in the PSK identity, it is transmitted unencrypted over the network to inform a receiver which PSK to use.
+    .PARAMETER Tls_Psk
+    The preshared key, at least 32 hex digits. Required if either tls_connect or tls_accept has PSK enabled.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
-function Get-HostInterface() {
-    [CmdletBinding()]
+function Get-ZabbixHostInterface() {
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             ValueFromPipelineByPropertyName = $true
         )]
         [string]$hostId,
         [string]$InterfaceId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -598,9 +718,6 @@ function Get-HostInterface() {
                 throw "Uri is required when providing an AuthCode."
             }
         }    
-
-        #$params.Add("output", "extend")
-        #$payload.Add("auth", $authcode)
     }
 
     Process {
@@ -629,12 +746,26 @@ function Get-HostInterface() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Retrieve host interface(s).
+    .DESCRIPTION
+    Retrieve the interfaces assigned to the host. You can also provide the Interface ID top retrieve one interface.
+    .PARAMETER hostId
+    The ID of the host.
+    .PARAMETER InterfaceId
+    The Interface Id.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
-#endregion
 
-#region Interfaces
-function Add-HostInterface() {
-    [CmdletBinding()]
+function Add-ZabbixHostInterface() {
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory = $true,
@@ -649,18 +780,15 @@ function Add-HostInterface() {
         [string]$IPAddress,
         [string]$dnsName,
         [int]$port=10050,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
     Begin {
-        # if (-not $authcode) {
-        #     $authcode = Read-ZabbixConfig
-        # }
-        # $payload = Get-Payload
-        # $payload.Method = 'hostinterface.create'      
-        # $payload.Add("auth", $authcode)  
 
         $Parameters = @{
             method = 'hostinterface.create'
@@ -726,10 +854,36 @@ function Add-HostInterface() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Add (create) a Host interface.
+    .DESCRIPTION
+    Create an interface and assign it to a Host.
+    .PARAMETER hostId
+    The ID of the host to create the interface on.
+    .PARAMETER primaryInterface
+    Whether the interface is used as default on the host. Only one interface of some type can be set as default on a host.
+    .PARAMETER interfaceType
+    The type of Interface.
+    .PARAMETER useIP
+    Whether the connection should be made via IP.
+    .PARAMETER IPAddress
+    IP address used by the interface. (Can be empty if the connection is made via DNS)
+    .PARAMETER dnsName
+    DNS name used by the interface. (Can be empty if the connection is made via IP.)
+    .PARAMETER port
+    Port number used by the interface. Can contain user macros.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Set-ZabbixHost() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
         [Parameter(
@@ -774,8 +928,11 @@ function Set-ZabbixHost() {
             ParameterSetName = 'psk',
             ValueFromPipelineByPropertyName)]
         [string]$Tls_Psk,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -862,12 +1019,58 @@ function Set-ZabbixHost() {
     } catch {
         throw $_
     }
+    <#
+    .SYNOPSIS
+    Update a Zabbix Host.
+    .DESCRIPTION
+    Update the properties of a Zabbix Host.
+    .PARAMETER HostId
+    The ID of the host.
+    .PARAMETER HostName
+    The host (DNS) name of the host.
+    .PARAMETER Name
+    The visible name of the host.
+    .PARAMETER Description
+    Description of the host.
+    .PARAMETER Inventory_Mode
+    Host inventory population mode.
+    .PARAMETER Ipmi_AuthType
+    IPMI authentication algorithm.
+    .PARAMETER IPMI_Password
+    IPMI password.
+    .PARAMETER Ipmi_Privilege
+    IPMI privilege level.
+    .PARAMETER Ipmi_Username
+    IPMI username.
+    .PARAMETER Proxy_HostId
+    ID of the proxy that is used to monitor the host.
+    .PARAMETER Status
+    Status and function of the host. Possible values are: 0 - (default) monitored host; 1 - unmonitored host.
+    .PARAMETER Tls_Connect
+    Connections to host. Possible values are: 1 - (default) No encryption; 2 - PSK; 4 - certificate.
+    .PARAMETER Tls_Accept
+    Connections from host. Possible bitmap values are: 1 - (default) No encryption; 2 - PSK; 4 - certificate.
+    .PARAMETER Tls_Issuer
+    Certificate issuer.
+    .PARAMETER Tls_Subject
+    Certificate subject.
+    .PARAMETER Tls_Psk_Identity
+    PSK identity. Required if either tls_connect or tls_accept has PSK enabled. Do not put sensitive information in the PSK identity, it is transmitted unencrypted over the network to inform a receiver which PSK to use.
+    .PARAMETER Tls_Psk
+    The preshared key, at least 32 hex digits. Required if either tls_connect or tls_accept has PSK enabled.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 
 
-function Set-HostInterface() {
-    [CmdletBinding()]
+function Set-ZabbixHostInterface() {
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory = $true,
@@ -881,19 +1084,15 @@ function Set-HostInterface() {
         [string]$IPAddress,
         [string]$dnsName,
         [int]$port=10050,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
     Begin {
-        # if (-not $authcode) {
-        #     $authcode = Read-ZabbixConfig
-        # }
-
-        # $payload = Get-Payload
-        # $payload.method = 'hostinterface.update'
-        # $payload.Add("auth", $authcode)
 
         $Parameters = @{
             method = 'hostinterface.update'
@@ -957,4 +1156,93 @@ function Set-HostInterface() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS 
+    Update a Host interface.
+    .DESCRIPTION
+    Update an existing host interface.
+    .PARAMETER InterfaceId
+    The ID of the interface
+    .PARAMETER primaryInterface
+    Whether the interface is used as default on the host. Only one interface of some type can be set as default on a host.
+    .PARAMETER interfaceType
+    The Interface type.
+    .PARAMETER useIP
+    Whether the connection should be made via IP.
+    .PARAMETER IPAddress
+    IP address used by the interface. Can be omitted if the connection is made via DNS.
+    .PARAMETER dnsName
+    DNS name used by the interface. Can be omitted if the connection is made via IP.
+    .PARAMETER port
+    Port number used by the interface. Can contain user macros.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
+}
+
+function Remove-ZabbixHostInterface() {
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
+    Param(
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]$InterfaceId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
+        [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
+        [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
+        [string]$Uri
+    )
+
+    $Parameters = @{
+        method = "hostinterface.delete"
+    }
+
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }
+
+    $params = @($InterfaceId)
+
+    $Parameters.Add("params", $params)
+
+    $Interface = Get-ZabbixHostInterface -InterfaceId $InterfaceId
+
+    if ($PSCmdlet.ShouldProcess("Delete", "Host Interface: $($Interface.Name)")) {
+        try {
+            Invoke-ZabbixAPI @Parameters
+            if ($response.error) {
+                throw $response.error.data
+            }
+            return $response.result
+        } catch {
+            throw $_
+        }
+    }
+    <#
+    .SYNOPSIS
+    Delete a Zabbix Host Interface
+    .DESCRIPTION 
+    Delete an interface from a host.
+    .PARAMETER InterfaceId
+    The ID of the interface.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }

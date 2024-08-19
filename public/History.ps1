@@ -1,5 +1,5 @@
 function Get-ZabbixHistory() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             ValueFromPipelineByPropertyName = $true
@@ -14,8 +14,11 @@ function Get-ZabbixHistory() {
         [ValidateSet('float','character','log','numeric','text')]
         [string]$historyType,
         [int]$limit,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 

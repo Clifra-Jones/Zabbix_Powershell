@@ -61,19 +61,39 @@ function Get-ZabbixDiscoveryRule() {
     } catch {
         throw $_
     }
+
+    <#
+    .SYNOPSIS
+    Retrieve Zabbix Discovery Rule(s).
+    .DESCRIPTION
+    Retrieve Zabbix Discovery Rule(s) from the Zabbix configuration.
+    .PARAMETER DRuleId
+    The Discovery Rule Id. If omitted all rules will be returned.
+    .PARAMETER IncludeChecks
+    Include the checks in the output.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Get-ZabbixDiscoveryRuleCheck() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(
             Mandatory = $true,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true
         )]
-        [string]$druleid,
+        [string]$dRuleId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -158,23 +178,39 @@ function Get-ZabbixDiscoveryRuleCheck() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Retrieve the checks associated with a discovery rule.
+    .DESCRIPTION
+    Retrieve the Discovery Checks associated with a discovery rule.
+    .PARAMETER dRuleId
+    The Discovery Rule ID to retrieve the check for.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 function Add-ZabbixDiscoveryRule() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
-        [psobject]$DRuleId,
+        [string]$Name,
         [Parameter(Mandatory = $true)]
         [string]$IpRange,
-        [Parameter(Mandatory = $true)]
-        [string]$Name,
         [string]$Delay,
         [string]$ProxyHostId,
         [switch]$Disabled,
-        [psobject]$Checks,
+        [Parameter(Mandatory)]
+        [PsObject[]]$Checks,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
-        [string]$AUthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
+        [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -206,70 +242,7 @@ function Add-ZabbixDiscoveryRule() {
     $params.Add("name", $DRule.Name)
     $params.Add("iprange", $DRule.iprange)
 
-    if ($Checks) {
-        $dchecks= @()
-        foreach ($dcheck in $checks) {
-            switch ($dcheck.dcheckid) {
-                "10" {
-                    $check = @{
-                        type = $dcheck.type
-                        ports = $dcheck.ports
-                        key_ = $dcheck.key_
-                        snmp_community = $dcheck.snmp_community
-                        uniq = $dcheck.uniq
-                    }
-                }
-                "11" {
-                    $check = @{
-                        type = $dcheck.type
-                        ports = $dcheck.ports
-                        key_ = $dcheck.key_
-                        snmp_community = $dcheck.snmp_community
-                        uniq = $dcheck.uniq
-                    }
-                }
-                "13" {
-                    $check = @{
-                        type = $dcheck.type
-                        ports= $dcheck.ports
-                        key_ = $dcheck.key_
-                        snmpv3_contextname = $dcjeck.snmpv3_contextname
-                        snmpv3_securityname = $dcheck.snmpv3_securityname                            
-                        uniq = $dcheck.uniq
-                    }
-                    switch ($dcheck.snmpv3_securitylevel) {
-                        "1" {                                    
-                            $check.Add("snmpv3_authprotocol", $dcheck.snmpv3_authprotocol)
-                            $check.Add("snmpv3_authpassphrase", $dcheck.snmpv3_authpassphrase)
-                        }
-                        "2" {
-                            $check.Add("snmpv3_authprotocol", $dcheck.snmpv3_authprotocol)
-                            $check.Add("snmpv3_authpassphrase", $dcheck.snmpv3_authpassphrase)
-                            $check.Add("snmpv3_privprotocol", $dcheck.snmpv3_privprotocol)
-                            $check.Add("snmpv3_privpassphrase", $dcheck.snmpv3_privpassphrase)
-                        }
-                    }
-                }
-                "9" {
-                    $check = @{
-                        type = $dcheck.type
-                        port = $dcheck.port
-                        key_ = $dcheck.Key_
-                        uniq = $dcheck.uniq
-                    }
-                }
-                default {
-                    $check = @{
-                        type = $dcheck.type
-                        port = $dcheck.port
-                    }
-                }
-            }
-            $dchecks += $check
-        }
-    }
-
-    $params.Add("dchecks", $dchecks)
+    $params.Add("dchecks", $Checks)
 
     #$body = $payload | ConvertTo-Json -Depth 10 #-Compress
 
@@ -286,204 +259,145 @@ function Add-ZabbixDiscoveryRule() {
     } catch {
         throw $_
     }
+    <#
+    .SYNOPSIS
+    Add a Discovery Rule
+    .DESCRIPTION
+    Add a discovery rule to the zabbix configuration.
+    .PARAMETER Name
+    The Name of the discovery rule.
+    .PARAMETER IpRange
+    The IP Range of the discovery rule.
+    .PARAMETER Delay
+    Execution interval of the discovery rule. Accepts seconds, time unit with suffix and user macro.
+    .PARAMETER ProxyHostId
+    ID of the Proxy host.
+    .PARAMETER Disabled
+    Create the rul in the disabled state.
+    .PARAMETER Checks
+    An array of check objects to apply to this rule.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }
 
 
 function Set-ZabbixDiscoveryRule() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$DruleId,        
-        [CheckType]$Type,
+        [String]$Name,
         [string]$IpRange,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [string]$Key,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [string]$Ports,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript(
-            {$_ -and ($type -in 10,7,11,13)}, 
-            ErrorMessage = "Parameter Snmp_Community can only be used with Parameter Type as 'SNMPv1 agent', 'IMAP,SNMPv2 agent', or 'SNMPv3 agent'"
-        )]
-        [string]$Snmp_Community,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Securitylevel can only be used when parameter Type is set to 'SNMPv3 agent'.")]
-        [string]$Snmpv3_Securitylevel,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript({$_ -and ($type -eq ([CheckType]::SNMPv3_agent) -and ($Snmpv3_Securitylevel -in 'authNoPriv','authPriv'))}
-        )]
-        [string]$Snmpv3_Authpassphrase,
-        [Parameter(ValueFromPipelineByPropertyName)]        
-        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Authprotocol can only be used when parameter Type is set to 'SNMPv3 agent'.")]
-        [AuthProtocol]$Snmpv3_Authprotocol,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Contextname can only be used when parameter Type is set to 'SNMPv3 agent'.")]
-        [string]$Snmpv3_Contextname,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Privpassphrase can only be used when parameter Type is set to 'SNMPv3 agent'.")]
-        [securestring]$Snmpv3_Privpassphrase,
-        [Parameter(ValueFromPipelineByPropertyName)]        
-        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Protocol can only be used when parameter Type is set to 'SNMPv3 agent'.")]
-        [PrivProtocol]$Snmpv3_PrivProtocol,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript({$_ -and $type -eq ([CheckType]::SNMPv3_agent)}, ErrorMessage = "Parameter Snmpv3_Securityname can only be used when parameter Type is set to 'SNMPv3 agent'.")]
-        [SecurityLevel]$Snmpv3_Securityname,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [switch]$Unique,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [HostSource]$HostNameSource,
-        [Parameter(ValueFromPipeline)]
-        [VisibleNameSource]$VisibleNameSource,
+        [string]$Delay,
+        [string]$ProxyHost,
+        [switch]$Disabled,
+        [PsObject]$Checks,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
-    # if (-not $authcode) {
-    #     $authcode = Read-ZabbixConfig
-    # }
+    $Parameters = @{
+        method = 'drule.update'
+    }
 
-<#     $CheckTypes = @{
-        'SNMPv1 agent' = '10'
-        'IMAP' = '7'
-        'SNMPv2 agent' = '11'
-        'ICMP ping' = '12'
-        'SMTP' = '2'
-        'LDAP' = '1'
-        'FTP' = '3'
-        'NNTP' = '6'
-        'HTTP' = '4'
-        'POP' = '5'
-        'TCP' = '8'
-        'Telnet' = '15'
-        'Zabbix agent' = '9'
-        'HTTPS' = '14'
-        'SSH' = '0'
-        'SNMPv3 agent' = '13'
-    } 
-    $PrivProtocols = @{
-        AES128 = '1'
-        AES192 = '2'
-        AES256 = '3'
-        AES192C = '4'
-        AES256C = '5'
-    } 
-    $SecurityLevels = @{
-        noAuthNoPriv = '1'
-        authNoPriv = '2'
-        authPriv = '3'
+    if ($ProfileName) {
+        $Parameters.Add("ProfileName", $ProfileName)
+    } elseif ($AuthCode) {
+        if ($Uri) {
+            $Parameters.Add("AuthCode", $AuthCode)
+            $Parameters.Add("Uri", $Uri)
+        } else {
+            throw "Uri is required when providing an AuthCode."
+        }
+    }   
+
+    $params = @{}
+
+    if ($Name) {
+        $Parameters.Add("name", $Name)
     }
-    $AuthProtocols = @{
-        SHA1 = '1'
-        SHA224 = '2'
-        SHA256 = '3'
-        SHA384 = '4'
-        SHA512 = '5'
+
+    if ($IpRange) {
+        $params.Add("iprange", $IpRange)
     }
+
+    if ($Delay) {
+        $params.Add("delay", $Delay)
+    }
+
+    if ($Disabled) {
+        $params.Add("status", 1)
+    }
+
+    if ($Checks) {
+        $params.Add("checks", $Checkds)
+    }
+
+    $Parameters.Add("params", $params)
+
+    #$body = $payload | ConvertTo-JSON -Depth 10 -Compress
+
+    try {
+        #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
+        $response = Invoke-ZabbixAPI @Parameters
+
+        if ($response.error) {
+            throw $response.err.data
+        }
+        return $response.result
+    } catch {
+        throw $_
+    }
+
+    <#
+    .SYNOPSIS 
+    Updates a Discovery Rule
+    .DESCRIPTION
+    Updates the properties and checks of a Discovery Rule.
+    .PARAMETER DruleId
+    The ID of the discovery Rule.
+    .PARAMETER Name
+    The new name of the rule.
+    .PARAMETER IpRange
+    One or several IP ranges to check separated by commas.
+    .PARAMETER Delay
+    Execution interval of the discovery rule. Accepts seconds, time unit with suffix and user macro. Default: 1h.
+    .PARAMETER ProxyHost
+    ID of the proxy used for discovery.
+    .PARAMETER Disabled
+    Set the rul to Disabled.
+    .PARAMETER Checks
+    An array of discovery checks.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
     #>
-
-    # $payload.method = "drule.update"
-    # $payload.Add("auth", $authcode)
-
-    Begin {
-        $Parameters = @{
-            method = 'drule.update'
-        }
-
-        if ($ProfileName) {
-            $Parameters.Add("ProfileName", $ProfileName)
-        } elseif ($AuthCode) {
-            if ($Uri) {
-                $Parameters.Add("AuthCode", $AuthCode)
-                $Parameters.Add("Uri", $Uri)
-            } else {
-                throw "Uri is required when providing an AuthCode."
-            }
-        }   
-
-        $params = @{}
-
-        if ($Type) {
-            $_type = $CheckTypes[$type]
-            $params.Add("type", $_type)
-        }
-        if ($IpRange) {
-            $params.Add("iprange", $IpRange)
-        }
-    }
-    
-    Process {
-        if ($Key) {
-            $params.Add("Key_", $Key)
-        }
-        if ($Ports) {
-            $params.Add("ports", $Ports)
-        }
-        if ($Snmp_Community) {
-            $params.Add("snmp_community", $Snmp_Community)
-        }
-        if ($Snmpv3_Authpassphrase) {            
-            $params.Add("snmpv3_authpassphrase", $PassPhrase)
-        }
-        if ($Snmpv3_Authprotocol) {
-            $params.Add("snmpv3_authprotocol", $AuthProtocol.value__)
-        }
-        if ($Snmpv3_Contextname) {
-            $params.Add("snmpv3_contextname", $Snmpv3_Contextname)
-        }
-        if ($Snmpv3_Privpassphrase) {            
-            $params.Add("snmpv3_privpassphrase", $PrivPassPhrase)
-        }
-        if ($Snmpv3_PrivProtocol) {
-            $PrivProtocol = $PrivProtocols[$Snmpv3_PrivProtocol]
-            $params.Add("snmpv3_privprotocol", $PrivProtocol.value__)
-        }
-        if ($Snmpv3_Securitylevel) {
-            $SecLevel = $SecurityLevels[$Snmpv3_Securitylevel]
-            $params.Add("snmpv3_securitylevel", $SecLevel)
-        }
-        if ($Snmpv3_Securityname) {
-            $Params.Add("snmpv3_securityname", $Snmpv3_Securityname)
-        }
-        if ($Unique.IsPresent) {
-            $params.Add("uniq", '1')
-        }
-        if ($HostNameSource) {
-                $params.Add("host_source", $HostNameSource.value__)                
-        }                    
-        if ($VisibleNameSource) {
-            $params.Add("name_source", $VisibleNameSource.value__)
-        }
-    }
-
-    End{
-        $Parameters.Add("params", $params)
-
-        #$body = $payload | ConvertTo-JSON -Depth 10 -Compress
-
-        try {
-            #$response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
-            $response = Invoke-ZabbixAPI @Parameters
-
-            if ($response.error) {
-                throw $response.err.data
-            }
-            return $response.result
-        } catch {
-            throw $_
-        }
-    }
 }
 
 
 function Remove-ZabbixDiscoveryRule() {
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$DRuleId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -535,4 +449,18 @@ function Remove-ZabbixDiscoveryRule() {
             throw $_
         }
     }
+    <#
+    .SYNOPSIS
+    Remove a Discovery Rule.
+    .DESCRIPTION
+    Remove the specified discovery rule from the configuration
+    .PARAMETER DRuleId
+    ID of the discovery rule.
+    .PARAMETER ProfileName
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)
+    #>
 }

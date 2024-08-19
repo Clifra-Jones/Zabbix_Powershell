@@ -1,5 +1,5 @@
 function Get-ZabbixItems() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
     Param(
         [string]$hostId,
         [string]$itemId,
@@ -12,8 +12,11 @@ function Get-ZabbixItems() {
         [switch]$searchWildcardsEnabled,
         [switch]$searchFromStart,
         [switch]$NoProgress,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -176,9 +179,10 @@ function Get-ZabbixItems() {
 }
 
 function Set-ZabbixItem() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
-        [psobject]$ItemId,
+        [PsObject]$ItemId,
         [string]$Name,
         [string]$Delay,
         [switch]$Disabled,
@@ -190,7 +194,7 @@ function Set-ZabbixItem() {
         [ValidateScript({$_ -is [ValueTYpe]})]
         [ItemValueType]$ValueType,
         [ValidateScript(
-            {$_.IsPresent -and $type -eq [ItemType]::HTTPAgent}, ErrprMessage = "Parameter allowTraps only valid for HTTPAgent Item index.")]
+            {$_.IsPresent -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter allowTraps only valid for HTTPAgent Item index.")]
         [switch]$allowTraps,
         [ValidateSet('none','Basic','NTLM','Kerberos','Password','PublicKey')]
         [ValidateScript(
@@ -210,11 +214,19 @@ function Set-ZabbixItem() {
         [ValidateScript({$_ -and $type -eq [ItemType]::JMXAgent}, ErrorMessage = "Parameter JMXEndpoint is only valid for JMXAgent Item type.")]
         [string]$JMXEndpoint,
         [int]$MasterItemId,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter OutputFormat is only valid for HTTPAgent Item type.")]
+        [string]$OutputFormat,
         [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script}, 
-            ErrorMessage = "Parameter AdditionalParams only valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types.")]
+             ErrorMessage = "Parameter AdditionalParams only valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types.")]
         [psObject]$AdditionalParams,
         [ValidateScript({$_ -and $type -eq [ItemType]::Script}, ErrorMessage = "Parameter ScriptParams is only valid got Script Item type.")]
         [psobject]$scriptParams,
+        [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script, [ItemType]::JMXAgent, [ItemType]::HTTPAgent}, 
+             ErrorMessage = "Parameter Username only valid for SSHAgent, TelnetAgent, DatabaseMonitor, JMX, HTTP, and Script Item types.")]
+        [string]$Username,
+        [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script, [ItemType]::JMXAgent, [ItemType]::HTTPAgent}, 
+             ErrorMessage = "Parameter Password only valid for SSHAgent, TelnetAgent, DatabaseMonitor, JMX, HTTP, and Script Item types.")]
+        [string]$Password,
         [ValidateSet('Raw','JSON','XML')]
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter postType is only valid for HTTPAgent Item type.")]
         [ItemPostType]$PostType,
@@ -228,7 +240,7 @@ function Set-ZabbixItem() {
         [RequestMethod]$requestMethod,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [ValidateScript({$_ -eq [RetrieveMode]::Header -and $RequestMethod -eq [RequestMethod]::Head}, 
-            ErrorMessage = "If Parameter RetrieveMOde is set to Headers, Parameter RequestMethid must be set to Head" )]
+            ErrorMessage = "If Parameter RetrieveMOde is set to Headers, Parameter RequestMethod must be set to Head" )]
         [string]$retrieveMode,
         [ValidateScript({$_ -and $type -eq [ItemType]::SNMPAgent}, ErrorMessage = "Parameter snmpOID os only valid for SNMPAgent item type")]
         [string]$snmpOID,
@@ -237,7 +249,7 @@ function Set-ZabbixItem() {
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyFile is only valid for HTTPAgent item type.")]
         [string]$SslKeyFile,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyPassword is only valid for HTTPAgent item type.")]
-        [securestring]$SslKeyPassword,
+        [String]$SslKeyPassword,
         [string[]]$StatusCodes,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [string]$Timeout,
@@ -246,13 +258,15 @@ function Set-ZabbixItem() {
         [string]$Trends,
         [string]$Units,
         [string]$valueMapId,
-        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
+        # [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyHost,
-        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
+        # [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyPeer,
-        [switch]$NoProgress,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -348,6 +362,66 @@ function Set-ZabbixItem() {
     }
     if ($retrieveMode) {
         $params.Add("retrieve_mode",$retrieveMode.Value__)
+    }
+
+    if ($snmpOID) {
+        $params.Add("snmp_oid", $snmpOID)
+    }
+
+    if ($SslCertFile) {
+        $param.Add("ssl_cert_file", $SslCertFile)
+    }
+
+    if ($SslKeyFile) {
+        $params.Add("ssl_key_file", $SslKeyFile)
+    }
+
+    if ($SslKeyPassword) {
+        $params.Add("ssl_key_password", $SslKeyPassword)
+    }
+
+    if ($StatusCodes) {
+        $params.Add("status_codes", $StatusCodes)
+    }
+
+    if ($Timeout) {
+        $params.Add("timeout", $Timeout)
+    }
+    
+    if ($trapperHost) {
+        $params.Add("trapper_host", $trapperHost)
+    }
+
+    if ($Trends) {
+        $params.Add("trands", $Trends)
+    }
+
+    if ($Units) {
+        $params.Add("units", $Units)
+    }
+
+    if ($valueMapId) {
+        $params.Add("valuemapid", $valueMapId)
+    }
+
+    if ($verifyHost) {
+        $params.Add("verify_host", $verifyHost)
+    }
+
+    if ($verifyPeer) {
+        $params.Add("verify_peer", $verifyPeer)        
+    }
+
+    if ($OutputFormat) {
+        $params.Add("output_format", $OutputFormat)
+    }
+
+    if ($Username) {
+        $params.Add("username", $Username)
+    }
+
+    if ($Password) {
+        $params.Add("password", $Password)
     }
 
     #payload.Add("auth", $authcode)
@@ -512,14 +586,14 @@ function Set-ZabbixItem() {
     .PARAMETER ProfileName
     The name of the saved profile to use.
     .OUTPUTS
-    An object contioning the item Id(s) of updated item(s).
+    An object containing the item Id(s) of updated item(s).
     #>
 }
 
 function Add-ZabbixItem() {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'default')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword','')]
     Param(
-        [psobject]$ItemId,
         [string]$Name,
         [string]$Delay,
         [switch]$Disabled,
@@ -531,7 +605,7 @@ function Add-ZabbixItem() {
         [ValidateScript({$_ -is [ValueTYpe]})]
         [ItemValueType]$ValueType,
         [ValidateScript(
-            {$_.IsPresent -and $type -eq [ItemType]::HTTPAgent}, ErrprMessage = "Parameter allowTraps only valid for HTTPAgent Item index.")]
+            {$_.IsPresent -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter allowTraps only valid for HTTPAgent Item index.")]
         [switch]$allowTraps,
         [ValidateSet('none','Basic','NTLM','Kerberos','Password','PublicKey')]
         [ValidateScript(
@@ -551,11 +625,19 @@ function Add-ZabbixItem() {
         [ValidateScript({$_ -and $type -eq [ItemType]::JMXAgent}, ErrorMessage = "Parameter JMXEndpoint is only valid for JMXAgent Item type.")]
         [string]$JMXEndpoint,
         [int]$MasterItemId,
+        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter OutputFormat is only valid for HTTPAgent Item type.")]
+        [string]$OutputFormat,
         [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script}, 
-            ErrorMessage = "Parameter AdditionalParams only valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types.")]
+             ErrorMessage = "Parameter AdditionalParams only valid for SSHAgent, TelnetAgent, DatabaseMonitor and Script Item types.")]
         [psObject]$AdditionalParams,
         [ValidateScript({$_ -and $type -eq [ItemType]::Script}, ErrorMessage = "Parameter ScriptParams is only valid got Script Item type.")]
         [psobject]$scriptParams,
+        [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script, [ItemType]::JMXAgent, [ItemType]::HTTPAgent}, 
+             ErrorMessage = "Parameter Username only valid for SSHAgent, TelnetAgent, DatabaseMonitor, JMX, HTTP, and Script Item types.")]
+        [string]$Username,
+        [ValidateScript({$_ -and $type -in [ItemType]::SSHAgent,[ItemType]::TelnetAgent,[ItemType]::DatabaseMonitor, [ItemType]::Script, [ItemType]::JMXAgent, [ItemType]::HTTPAgent}, 
+             ErrorMessage = "Parameter Password only valid for SSHAgent, TelnetAgent, DatabaseMonitor, JMX, HTTP, and Script Item types.")]
+        [string]$Password,
         [ValidateSet('Raw','JSON','XML')]
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter postType is only valid for HTTPAgent Item type.")]
         [ItemPostType]$PostType,
@@ -569,7 +651,7 @@ function Add-ZabbixItem() {
         [RequestMethod]$requestMethod,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [ValidateScript({$_ -eq [RetrieveMode]::Header -and $RequestMethod -eq [RequestMethod]::Head}, 
-            ErrorMessage = "If Parameter RetrieveMOde is set to Headers, Parameter RequestMethid must be set to Head" )]
+            ErrorMessage = "If Parameter RetrieveMOde is set to Headers, Parameter RequestMethod must be set to Head" )]
         [string]$retrieveMode,
         [ValidateScript({$_ -and $type -eq [ItemType]::SNMPAgent}, ErrorMessage = "Parameter snmpOID os only valid for SNMPAgent item type")]
         [string]$snmpOID,
@@ -578,7 +660,7 @@ function Add-ZabbixItem() {
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyFile is only valid for HTTPAgent item type.")]
         [string]$SslKeyFile,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter SslKeyPassword is only valid for HTTPAgent item type.")]
-        [securestring]$SslKeyPassword,
+        [String]$SslKeyPassword,
         [string[]]$StatusCodes,
         [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [string]$Timeout,
@@ -587,13 +669,15 @@ function Add-ZabbixItem() {
         [string]$Trends,
         [string]$Units,
         [string]$valueMapId,
-        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
+        # [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, ErrorMessage = "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyHost,
-        [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
+        # [ValidateScript({$_ -and $type -eq [ItemType]::HTTPAgent}, "Parameter retrieveMode is only valid for HTTPAgent item type.")]
         [switch]$verifyPeer,
-        [switch]$NoProgress,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
@@ -653,6 +737,66 @@ function Add-ZabbixItem() {
         $params.Add("retrieve_mode",$retrieveMode.Value)
     }
 
+    if ($snmpOID) {
+        $params.Add("snmp_oid", $snmpOID)
+    }
+
+    if ($SslCertFile) {
+        $param.Add("ssl_cert_file", $SslCertFile)
+    }
+
+    if ($SslKeyFile) {
+        $params.Add("ssl_key_file", $SslKeyFile)
+    }
+
+    if ($SslKeyPassword) {
+        $params.Add("ssl_key_password", $SslKeyPassword)
+    }
+
+    if ($StatusCodes) {
+        $params.Add("status_codes", $StatusCodes)
+    }
+
+    if ($Timeout) {
+        $params.Add("timeout", $Timeout)
+    }
+    
+    if ($trapperHost) {
+        $params.Add("trapper_host", $trapperHost)
+    }
+
+    if ($Trends) {
+        $params.Add("trands", $Trends)
+    }
+
+    if ($Units) {
+        $params.Add("units", $Units)
+    }
+
+    if ($valueMapId) {
+        $params.Add("valuemapid", $valueMapId)
+    }
+
+    if ($verifyHost) {
+        $params.Add("verify_host", $verifyHost)
+    }
+
+    if ($verifyPeer) {
+        $params.Add("verify_peer", $verifyPeer)        
+    }
+
+    if ($OutputFormat) {
+        $params.Add("output_format", $OutputFormat)
+    }
+
+    if ($Username) {
+        $params.Add("username", $Username)
+    }
+
+    if ($Password) {
+        $params.Add("password", $Password)
+    }
+
     $Parameters.add("params", $params)
 
     try {
@@ -670,7 +814,7 @@ function Add-ZabbixItem() {
     Add an Item to a host or template.
     .DESCRIPTION
     Add an Zabbix Item to a Zabbix host or template.
-    .PARAMETER HostId
+    .PARAMETER ItemId
     Id of the host or template to add the item to.
     .PARAMETER name
     The Item Name.
@@ -802,20 +946,39 @@ function Add-ZabbixItem() {
     HTTP agent item field. Validate is host certificate authentic.
     .PARAMETER NoProgress
     Do not show progress.
+    .PARAMETER OutputFormat
+    HTTP agent item field. Should response be converted to JSON. 0 - (default) Store raw. 1 - Convert to JSON.
+    .PARAMETER Username
+    Username for authentication. Used by simple check, SSH, Telnet, database monitor, JMX and HTTP agent items.
+    Required by SSH and Telnet items.
+    When used by JMX, password should also be specified together with username or both properties should be left blank.
+    .PARAMETER Password
+    Password for authentication. Used by simple check, SSH, Telnet, database monitor, JMX and HTTP agent items.
+    When used by JMX, username should also be specified together with password or both properties should be left blank.
+    .PARAMETER StatusCodes
+    HTTP agent item field. Ranges of required HTTP status codes separated by commas. Also supports user macros as part of comma separated list.
+    Example: 200,200-{$M},{$M},200-400
     .PARAMETER ProfileName
-    The name of the saved profile to use.
+    Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
+    .PARAMETER AuthCode
+    Zabbix AuthCode to use to authenticate. (Cannot be used with Profile)
+    .PARAMETER Uri
+    The URI of the zabbix server. (Cannot be used with Profile)    
     .OUTPUTS
     An object contioning the item Id(s) of updated item(s).
     #>
 }
 
 function Remove-ZabbixItem() {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'default')]
     Param(
         [Parameter(Mandatory = $true)]
         [string]$ItemId,
+        [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
+        [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$Uri
     )
 
