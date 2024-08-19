@@ -21,10 +21,12 @@ function Get-ZabbixAuthCode() {
     $Username = $zabbixCreds.UserName
     $Passwd = ConvertFrom-SecureString -SecureString $zabbixCreds.Password -AsPlainText
 
-    $payload = Get-Payload
+    $payload = @{
+        jsonrpc = "2.0"
+    }
 
-    $payload.method = "user.login"
-    $payload.params = @{
+    $payload['method'] = "user.login"
+    $payload['params'] = @{
         username = $UserName
         password = $Passwd
     }
@@ -66,7 +68,7 @@ function Get-ZabbixAuthCode() {
                         authcode = $authcode
                     }
                 }
-                $Profiles | Add-Member -MemberType NoteProperty -Name $ProfileName -Value $NewProfile
+                $Profiles | Add-Member -MemberType NoteProperty -Name $ProfileName -Value $NewProfile -Force
             }
             ConvertTo-Json $Profiles | Out-File $configFile             
         }
@@ -101,7 +103,7 @@ function Get-ZabbixAuthCode() {
     .OUTPUTS
     The authorization token as a string.
     .NOTES
-    This command As the alias Connect-ZabbixUse. Eventually the Get-ZabbixAuthcode command will be depreciated 
+    This command has the alias Connect-ZabbixUser. Eventually the Get-ZabbixAuthcode command will be depreciated 
     in favor of Connect-ZabbixUser.
 
     The authcode will remain active until you log out with the Disconnect-ZabbixUser function (alias: Remove-ZabbixAuthCode)
