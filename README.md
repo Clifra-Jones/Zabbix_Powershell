@@ -22,13 +22,12 @@ This module is a work in progress, not all functions have been fully tested. You
 All writable function require Admin and Super admin rights.
 
 ## Installation
-<!-->
-#### Install from the Powershell Gallary
+
+#### Install from the Powershell Gallery
 
 ```powershell
 Install-Module Zabbix_Powershell
 ```
--->
 
 #### Clone from source repository
 
