@@ -155,7 +155,7 @@ PrivateData = @{
         LicenseUri = 'https://opensource.org/license/ms-pl-html'
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/Clifra-Jones/PSZabbix'
+        ProjectUri = 'https://github.com/Clifra-Jones/Zabbix_Powershell.git'
 
         # A URL to an icon representing this module.
         # IconUri = ''
