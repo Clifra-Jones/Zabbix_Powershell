@@ -27,7 +27,7 @@ Author = 'Cliff Williams'
 CompanyName = 'Balfour Beatty US'
 
 # Copyright statement for this module
-Copyright = '(c) Cliff Williams. All rights reserved.'
+Copyright = '(c) Cliff Williams/Balfour Beatty US. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Powershell module to interact the the Zabbix API. (See project site for more details)'
