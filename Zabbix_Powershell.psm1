@@ -35,8 +35,15 @@ function Read-ZabbixConfig() {
 
     if (Test-Path $configFile) {
         $config = Get-Content $configFile | ConvertFrom-Json
+
+        $AuthProfile = $config.$ProfileName
+
+        if ($AuthProfile.authCode -eq 'secure') {
+            $authcode = (Get-Secret -Name "Zabbix_$ProfileName" -AsPlainText | ConvertFrom-Json).authcode
+            $AuthProfile.authcode = $authcode
+        }
     
-        return $config.$ProfileName
+        return $AuthProfile
     } else {
         return $null
     }
@@ -60,7 +67,7 @@ function Invoke-ZabbixAPI() {
         [Parameter(Mandatory = $true)]
         [string]$Method,
         [Parameter(Mandatory = $true)]
-        [psobject]$params,
+        [PsObject]$params,
         [string]$ProfileName,
         [string]$AuthCode,
         [string]$Uri
@@ -82,6 +89,7 @@ function Invoke-ZabbixAPI() {
             $AuthProfile = $CurrentProfile
         }
     }
+
 
     if (-not $AuthProfile) {
         Throw "Authentication not provided. Please check your default profile or provide a profile name, or Authcode and URL."
@@ -111,7 +119,7 @@ function Invoke-ZabbixAPI() {
     Make a custom call to the zabbix API.
     .DESCRIPTION
     This method allows you to make a customized call to the API. 
-    There are many parameters for the API calls. Not all of them are in the module functons. This is for simplicity sake.
+    There are many parameters for the API calls. Not all of them are in the module functions. This is for simplicity sake.
     .PARAMETER Method
     This is the method to call. i.e. 'host.get'
     .PARAMETER params
