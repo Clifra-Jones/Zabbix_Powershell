@@ -53,6 +53,7 @@ $script:CurrentProfile = Read-ZabbixConfig
 . $PSScriptRoot/public/Templates.ps1
 . $PSScriptRoot/public/Discovery.ps1
 . $PSScriptRoot/public/Users.ps1
+. $PSScriptRoot/public/Actions.ps1
 
 function Invoke-ZabbixAPI() {
     Param(
@@ -96,7 +97,7 @@ function Invoke-ZabbixAPI() {
 
     $payload.Add("auth", $AuthProfile.authcode)
 
-    $body = $payload | ConvertTo-Json -Depth 10 -Compress
+    $body = $payload | ConvertTo-Json -Depth 10 #-Compress
 
     try {
         $response = Invoke-RestMethod -Method POST -Uri $Uri -ContentType $contentType -Body $body
