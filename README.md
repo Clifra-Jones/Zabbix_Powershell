@@ -13,7 +13,7 @@ Not all the API methods have corresponding Powershell functions and not all func
 For instance the host.get API call accepts several array properties like hostids, groupids, itemids, etc. that can be used to return the associated hosts that corresponding to the values in those arrays. While the function Get-ZabbixHost only accepts the parameter -HostId which is a single host id.
 You can pipe an array of Host Ids to the function to return the associated hosts.
 
-This was done to preserve the "Powershell" way of doing things. In PowerShell when you want a function to return data for a collection of objects, you send those objects to the function through the pipeline |. This keeps the module consistent with how users are familiar with using powershell. This does result in more round trips to the API interface that would otherwise be necessary.
+This was done to preserve the "Powershell" way of doing things. In PowerShell when you want a function to return data for a collection of objects, you send those objects to the function through the pipeline. This keeps the module consistent with how users are familiar with using powershell. This does result in more round trips to the API interface that would otherwise be necessary.
 
 For any API function that does not have a corresponding PowerShell function or if you want to use more of the features of the API method you can use the Invoke-ZabbixAPI function to call the API methods more directly. If you are piping a large array to a function, it may be more efficient to use this function and pass an array of Ids for the object you are retrieving. Therefor, returning your data in one API call.
 
