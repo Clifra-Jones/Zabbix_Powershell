@@ -377,13 +377,40 @@ function Get-ZabbixHost() {
         [string]$HostId,
         [string]$HostName,
         [string]$groupid,
-        [string]$itemid,
-        [string]$templateid,
-        [switch]$includeItems,
-        [switch]$includeGroups,
-        [switch]$includeInterfaces,
-        [switch]$includeParentTemplates,
-        [switch]$excludeDisabled,
+        [string]$ItemId,
+        [string]$TemplateId,
+        [switch]$IncludeItems,
+        [switch]$IncludeGroups,
+        [switch]$IncludeInterfaces,
+        [switch]$IncludeParentTemplates,
+        [switch]$ExcludeDisabled,
+        [switch]$IncludeCount,
+        [int]$Limit,
+        [switch]$PreserveKeys,
+        [switch]$SearchByAny,
+        [switch]$SearchByWildCards,
+        [switch]$sortField,
+        [array]$Filter,
+        [array]$Search,
+        [ValidateSet('ASC','DESC')]
+        [string]$SortOrder,
+        [switch]$StartsWith,
+        [array]$Tags,
+        [switch]$InheritedTags,
+        [switch]$IncludeDiscoveries,
+        [switch]$IncludeDiscoveryRule,
+        [switch]$includeGraphs,
+        [switch]$includeHostDiscovery,
+        [switch]$IncludeHTTPTests,
+        [switch]$IncludeMacros,
+        [switch]$includeDashboards,
+        [switch]$IncludeTags,
+        [switch]$IncludeInheritedTags,
+        [switch]$IncludeInventory,
+        [switch]$IncludeTriggers,
+        [switch]$IncludeValueMaps,
+        [int]$LimitIncludes,
+        [hashtable]$SearchInventory,
         [Parameter(Mandatory, ParameterSetName = 'profile')]
         [string]$ProfileName,
         [Parameter(Mandatory, ParameterSetName = 'authcode')]
@@ -443,11 +470,81 @@ function Get-ZabbixHost() {
     if ($includeParentTemplates) {
         $params.Add("selectParentTemplates", "extend")
     }
+    if ($IncludeCount) {
+        $params.Add("countOutput", $true)
+    }    
 
     if ($HostName) {
-        $params.Add("filter", @{
-            "host" = @($HostName)
-        })
+        $params.Add("search", @{
+                host = @($HostName)
+            }
+        )
+    }
+
+    if ($Filter) {
+        $params.Add("filter", $Filter)
+    }
+
+    if ($Search) {
+        $params.Add("search", $search)
+    }
+
+    if ($SearchByAny) {
+        $params.Add("searchByAny", $true)
+    }
+    if ($SearchByWildCards) {
+        $params.Add("searchWildcardsEnabled")
+    }
+    if ($sortField) {
+        $params.Add("sortfield", $sortField)
+    }
+    if ($SortOrder) {
+        $params.Add("sortorder", $SortOrder)
+    }
+    if ($StartsWith) {
+        $params.Add("startSearch", $true)
+    }
+    if ($Tags) {
+        $params.Add("tags", $Tags)
+    }
+    if ($InheritedTags) {
+        $params.Add("inheritedTags", $true)
+    }
+    if($IncludeDiscoveries) {
+        $params.Add("selectDiscoveries", "extend")
+    }
+    if ($IncludeDiscoveryRule) {
+        $Params.Add("selectDiscoveryRule", "extend")
+    }
+    if ($includeGraphs) {
+        $params.Add("selectGraphs", "extend")
+    }
+    if ($includeHostDiscovery) {
+        $params.Add("selectHostDiscovery", "extend")
+    }
+    if ($IncludeHTTPTests) {
+        $params.Add("selectHttpTests", "extend")
+    }
+    if ($IncludeInventory) {
+        $params.Add("selectInventory", "extend")
+    }
+    if ($IncludeMacros) {
+        $params.Add("selectMacros", "extend")
+    }
+    If ($IncludeTriggers) {
+        $params.Add("selectTriggers", "extend")
+    }
+    if ($IncludeValueMaps) {
+        $params.Add("selectValueMaps", "extend") 
+    }
+    if ($LimitIncludes) {
+        $params.Add("limitSelects", $Limit)
+    }
+    if ($SearchInventory) {
+        $params.Add("searchInventory", $SearchInventory)
+    }
+    if ($IncludeTags) {
+        $params.add("selectTags", 'extend')
     }
 
     #$payload.Add("auth", $authcode)
@@ -474,6 +571,8 @@ function Get-ZabbixHost() {
     Returns Zabbix hosts based oin the supplied parameters.
     .PARAMETER hostid
     Return the host with this host id.
+    .PARAMETER HostName
+    The host name of the host. Must be the host name in ZABBIX NOT the display name. This is case sensitive.
     .PARAMETER groupid
     Return the hosts that are a member of this group.
     .PARAMETER itemid
@@ -490,6 +589,97 @@ function Get-ZabbixHost() {
     Return a parentTemplates property with templates that the host is linked to.
     .PARAMETER excludeDisabled
     Exclude disabled hosts.
+    .PARAMETER IncludeCount
+    Includes a count of the returned items in the response.
+    .PARAMETER Limit
+    Limit the response to the fiven number of items.
+    .PARAMETER PreserveKeys
+    Use IDs as keys in the resulting array.
+    .PARAMETER SearchByAny
+    Return results that match any of the criteria given in the filter or search parameter instead of all of them.
+    .PARAMETER SearchByWildCards
+    Enables the use of "*" as a wildcard character in the search parameter.
+    .PARAMETER sortField
+    Sort the result by the given properties.
+    Possible values are: hostid, host, name, status.
+    .PARAMETER Filter
+    Return only those results that exactly match the given filter.
+    Accepts an array, where the keys are property names, and the values are either a single value or an array of values to match against.
+    .PARAMETER Search
+    Return results that match the given pattern (case-insensitive).
+    Accepts an array, where the keys are property names, and the values are strings to search for. If no additional options are given, this will perform a LIKE "%…%" search.
+    Allows searching by interface properties. Works only for string and text fields.
+    .PARAMETER SortOrder
+    Order of sorting. If an array is passed, each value will be matched to the corresponding property given in the sortfield parameter.
+    Possible values are:
+    ASC - (default) ascending;
+    DESC - descending.
+    .PARAMETER StartsWith
+    The search parameter will compare the beginning of fields, that is, perform a LIKE "…%" search instead.
+    Ignored if searchWildcardsEnabled is set to true.
+    .PARAMETER Tags
+    Return only hosts with given tags. Exact match by tag and case-sensitive or case-insensitive search by tag value depending on operator value.
+    Format: [{"tag": "<tag>", "value": "<value>", "operator": "<operator>"}, ...].
+    An empty array returns all hosts.
+
+    Possible operator values:
+    0 - (default) Contains;
+    1 - Equals;
+    2 - Not like;
+    3 - Not equal
+    4 - Exists;
+    5 - Not exists.
+
+    Example to crate a tag search parameter.
+    $Tags = @(
+        @{
+            tag = "component"
+            value = "storage"
+            operator = 1
+        }
+        @{
+            tag = "filesystem"
+            value = "C:"
+            operator = 1
+        }
+    )
+    .PARAMETER InheritedTags
+    Return hosts that have given tags also in all of their linked templates.
+    .PARAMETER IncludeDiscoveries
+    Return a discoveries property with host low-level discovery rules.
+    .PARAMETER IncludeDiscoveryRule
+    Return a discoveryRule property with the low-level discovery rule that created the host 
+    .PARAMETER IncludeGraphs
+    Return a graphs property with host graphs.
+    .PARAMETER includeHostDiscovery
+    Return a hostDiscovery property with host discovery object data.
+    The host discovery object links a discovered host to a host prototype or a host prototypes to an LLD rule and has the following properties:
+    host - (string) host of the host prototype;
+    hostid - (string) ID of the discovered host or host prototype;
+    parent_hostid - (string) ID of the host prototype from which the host has been created;
+    parent_itemid - (string) ID of the LLD rule that created the discovered host;
+    lastcheck - (timestamp) time when the host was last discovered;
+    ts_delete - (timestamp) time when a host that is no longer discovered will be deleted.
+    .PARAMETER IncludeHTTPTests
+    Return an httpTests property with host web scenarios.
+    .PARAMETER IncludeMacros
+    Return a macros property with host macros.
+    .PARAMETER inclideDashboards
+    Return a dashboards property.
+    .PARAMETER IncludeTags
+    Return a tags property with host tags.
+    .PARAMETER IncludeInheritedTags
+    Return an inheritedTags property with tags that are on all templates which are linked to host
+    .PARAMETER IncludeInventory
+    Return an inventory property with host inventory data.
+    .PARAMETER IncludeTriggers
+    Return a triggers property with host triggers.
+    .PARAMETER IncludeValueMaps
+    Return a valuemaps property with host value maps.
+    .PARAMETER LimitIncludes
+    Limits the number of records returned by includes.
+    .PARAMETER SearchInventory
+    Return only hosts that have inventory data matching the given wildcard search.
     .PARAMETER ProfileName
     Zabbix profile to use to authenticate. If omitted the default profile will be used. (Cannot be used with AuthCode and Uri)
     .PARAMETER AuthCode
@@ -891,44 +1081,31 @@ function Set-ZabbixHost() {
             ValueFromPipelineByPropertyName
         )]
         [string]$HostId,
-        [Parameter(ValueFromPipelineByPropertyName)]
         [Alias('host')]        
         [string]$HostName,
-        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Name,
-        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Description,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [InventoryModes]$Inventory_Mode = -1,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [IpmiAuthTypes]$Ipmi_AuthType = -1,
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [InventoryModes]$Inventory_Mode,
+        [IpmiAuthTypes]$Ipmi_AuthType,
         [string]$IPMI_Password,
-        [IPMIPrivileges]$Ipmi_Privilege = 2,
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [IPMIPrivileges]$Ipmi_Privilege,
         [string]$Ipmi_Username,
-        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Proxy_HostId,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [HostStatus]$Status = 0,
-        [Parameter(ValueFromPipelineByPropertyName)]        
-        [TlsConnections]$Tls_Connect = 1,
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [TlsConnections]$Tls_Accept = 1,
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [HostStatus]$Status,
+        [TlsConnections]$Tls_Connect,
+        [TlsConnections]$Tls_Accept,
         [string]$Tls_Issuer,
-        [Parameter(ValueFromPipelineByPropertyName)]
         [string]$Tls_Subject, 
         [Parameter(
-            ParameterSetName = 'psk',
-            ValueFromPipelineByPropertyName
+            ParameterSetName = 'psk'
         )]
         [string]$Tls_Psk_Identity,
         [Parameter(
-            ParameterSetName = 'psk',
-            ValueFromPipelineByPropertyName)]
+            ParameterSetName = 'psk'
+        )]
         [string]$Tls_Psk,
-        [Parameter(Mandatory, ParameterSetName = 'profile')]
+        [PsObject[]]$Macros,
+        [PsObject[]]$Tags,
         [string]$ProfileName,
         [Parameter(Mandatory, ParameterSetName = 'authcode')]
         [string]$AuthCode,
@@ -1005,6 +1182,31 @@ function Set-ZabbixHost() {
 
     if ($Tls_Psk) {
         $params.Add("tls_psk", $Tls_Psk)
+    }
+
+    if ($Macros) {
+        # Only text macros can be imported. Therefor we will convert all Secret and Vault macros to text macros 
+        # and enter a default value.
+        # We will also check for any descriptions are null or empty.
+        # we will replace the null value with "<enter description>".
+        $NewMacros = @()
+        $Macros | ForEach-Object {
+            $macro = @{
+                macro = $_.macro
+                description = $_.description
+            }
+            if ($_.Type -ne 0) {
+                $macro.Add("value", "<enter value>")
+            } else {
+                $macro.add("value", $_.value)
+            }
+            $NewMacros += $macro
+        }
+        $params.Add("macros", $NewMacros)
+    }
+
+    if ($Tags) {
+        $param.Add("tags", $Tags)
     }
 
     $Parameters.Add("params", $params)

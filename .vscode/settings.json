@@ -1,6 +1,10 @@
 {
     "cSpell.words": [
+        "authcode",
         "userprofile",
         "Zabbix"
+    ],
+    "cSpell.enableFiletypes": [
+        "powershell"
     ]
 }

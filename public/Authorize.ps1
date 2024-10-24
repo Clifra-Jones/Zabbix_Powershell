@@ -30,9 +30,10 @@ function Get-ZabbixAuthCode() {
         username = $UserName
         password = $Passwd
     }
+    $payload['id'] = 1
 
 
-    $body = $payload | ConvertTo-Json -Compress
+    $body = $payload | ConvertTo-Json #-Compress
 
     try {
         $response = Invoke-RestMethod -Method GET -Uri $Uri -ContentType $contentType -Body $body
@@ -67,15 +68,15 @@ function Get-ZabbixAuthCode() {
                         Uri = $Uri
                         authcode = $authcode
                     }
+                   $Profiles | Add-Member -MemberType NoteProperty -Name $ProfileName -Value $NewProfile -Force
                 }
-                $Profiles | Add-Member -MemberType NoteProperty -Name $ProfileName -Value $NewProfile -Force
             }
             ConvertTo-Json $Profiles | Out-File $configFile             
         }
         
         $CurrentProfile = @{
             Uri = $Uri 
-            autocode = $authcode
+            authcode = $authcode
         }
     } catch {
         Throw $_
@@ -191,6 +192,47 @@ function Remove-ZabbixAuthCode() {
 }
 
 Set-Alias -Name Disconnect-ZabbixUser -Value Remove-ZabbixAuthCode -Option ReadOnly
+
+function Save-ZabbixAuthCode () {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [string]$Uri,
+        [Parameter(Mandatory)]
+        [string]$AuthCode,
+        [string]$ProfileName
+    )
+
+    if (-not $ProfileName) {
+        $ProfileName = 'default'
+    }
+
+    if (-not (Test-Path -Path $configPath)) {
+        [void](New-Item -ItemType Directory -Path "$home/.zabbix")
+    }
+    if (-not (Test-Path -Path $configFile)) {
+        $Profiles = @{
+            $ProfileName = @{
+                Uri = $Uri
+                authcode = $AuthCode
+            }
+        }
+    } else {
+        $Profiles = Get-Content -Path $configFile | ConvertFrom-Json
+        if ($Profiles.ProfileName) {
+            $Profiles.ProfileName.Uri = $Uri
+            $Profiles.ProfileName.authCode = $AuthCode        
+        } else {
+            $NewProfile = @{
+                Uri = $Uri
+                authcode = $AuthCode
+            }
+            $Profiles | Add-Member -MemberType NoteProperty -Name $ProfileName -Value $NewProfile -Force
+        }
+    }
+
+    ConvertTo-Json $Profiles | Out-File $configFile
+}
 
 function Set-ZabbixProfile() {
     Param(
